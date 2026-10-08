@@ -2,42 +2,332 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Бібліотека — особистий кабінет</title>
+    <title>Бібліотека</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 20px auto; padding: 0 16px; }
+        header { display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #ccc; padding-bottom: 8px; }
+        table { border-collapse: collapse; width: 100%; margin: 8px 0; }
+        th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+        th { background: #f0f0f0; }
+        form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 24px; }
+        input, select, button { padding: 4px 8px; }
+        #message { padding: 8px; margin: 12px 0; min-height: 20px; }
+        .success { background: #e0f5e0; }
+        .error { background: #fde0e0; }
+    </style>
 </head>
 <body>
-<h1>Бібліотека</h1>
-<p>Ви увійшли через Keycloak (OIDC). Сесія активна.</p>
 
-<button onclick="showToken()">Показати мій токен</button>
-<button onclick="loadBooks()">GET /api/books з токеном</button>
-<a href="/logout">Вийти</a>
+<header>
+    <h1>Бібліотека</h1>
+    <div>
+        <span id="user-info">Завантаження...</span>
+        | <a href="/logout">Вийти</a>
+    </div>
+</header>
 
-<pre id="output">(тут з'являться результати)</pre>
+<div id="message"></div>
+
+<!-- ===================== АВТОРИ ===================== -->
+<section>
+    <h2>Автори</h2>
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Ім'я</th><th>Прізвище</th><th>Країна</th><th>Дії</th></tr>
+        </thead>
+        <tbody id="authors-table"></tbody>
+    </table>
+
+    <h3 id="author-form-title">Новий автор</h3>
+    <form onsubmit="saveAuthor(event)">
+        <input type="hidden" id="author-id">
+        <input id="author-first-name" placeholder="Ім'я">
+        <input id="author-last-name" placeholder="Прізвище">
+        <input id="author-country" placeholder="Країна">
+        <button type="submit">Зберегти</button>
+        <button type="button" onclick="resetAuthorForm()">Скасувати</button>
+    </form>
+</section>
+
+<!-- ===================== КНИГИ ===================== -->
+<section>
+    <h2>Книги</h2>
+    <table>
+        <thead>
+        <tr><th>ID</th><th>Назва</th><th>Автор</th><th>ISBN</th><th>Рік</th><th>Примірників</th><th>Дії</th></tr>
+        </thead>
+        <tbody id="books-table"></tbody>
+    </table>
+
+    <h3 id="book-form-title">Нова книга</h3>
+    <form onsubmit="saveBook(event)">
+        <input type="hidden" id="book-id">
+        <input id="book-title" placeholder="Назва">
+        <select id="book-author"></select>
+        <input id="book-isbn" placeholder="ISBN">
+        <input id="book-year" type="number" placeholder="Рік видання">
+        <input id="book-copies" type="number" placeholder="Примірників">
+        <button type="submit">Зберегти</button>
+        <button type="button" onclick="resetBookForm()">Скасувати</button>
+    </form>
+</section>
 
 <script>
-    let token = null;
+    let authors = [];
+    let books = [];
 
+    // ===================== ТОКЕН І КОРИСТУВАЧ =====================
+
+    // Отримує JWT поточного користувача з його сесії (TokenController)
     async function getToken() {
-        const res = await fetch('/ui/token');
-        const data = await res.json();
-        token = data.access_token;
+        try {
+            const res = await fetch('/ui/token');
+            const data = await res.json();
+            return data.access_token;
+        } catch (e) {
+            // Сесія завершилась: перезавантажуємо сторінку, щоб увійти знову
+            window.location.reload();
+            throw e;
+        }
     }
 
-    async function showToken() {
-        await getToken();
-        document.getElementById('output').textContent = token;
+    // Читає вміст токена (середню частину JWT), щоб показати ім'я і ролі
+    function readTokenInfo(token) {
+        const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(atob(payload));
     }
+
+    async function showUserInfo() {
+        const info = readTokenInfo(await getToken());
+        const allRoles = info.realm_access ? info.realm_access.roles : [];
+        const roles = allRoles.filter(r => r === 'USER' || r === 'ADMIN');
+        document.getElementById('user-info').textContent =
+            'Ви увійшли як: ' + info.preferred_username + ' (ролі: ' + roles.join(', ') + ')';
+    }
+
+    // ===================== ДОПОМІЖНІ ФУНКЦІЇ =====================
+
+    // Універсальний запит до нашого REST API з Bearer-токеном
+    async function api(method, url, body) {
+        const options = {
+            method: method,
+            headers: { 'Authorization': 'Bearer ' + await getToken() }
+        };
+        if (body) {
+            options.headers['Content-Type'] = 'application/json';
+            options.body = JSON.stringify(body);
+        }
+
+        const res = await fetch(url, options);
+        const text = await res.text();
+        let data = null;
+        try {
+            data = text ? JSON.parse(text) : null;
+        } catch (e) {
+            data = null;
+        }
+
+        if (!res.ok) {
+            throw new Error(errorText(res.status, data));
+        }
+        return data;
+    }
+
+    // Перетворює код помилки на зрозуміле повідомлення
+    function errorText(status, data) {
+        if (status === 401) return 'Помилка 401: сесія завершилась, оновіть сторінку.';
+        if (status === 403) return 'Помилка 403: доступ заборонено. Ця дія доступна лише адміністратору.';
+        if (data && data.errors) return 'Помилка ' + status + ': ' + data.errors.map(e => e.defaultMessage).join('; ');
+        if (data && data.message) return 'Помилка ' + status + ': ' + data.message;
+        return 'Помилка ' + status;
+    }
+
+    function showMessage(text, isError) {
+        const box = document.getElementById('message');
+        box.textContent = text;
+        box.className = isError ? 'error' : 'success';
+    }
+
+    // Захист від вставки HTML-коду в таблицю (XSS)
+    function esc(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function numberOrNull(value) {
+        return value === '' ? null : Number(value);
+    }
+
+    // ===================== АВТОРИ =====================
+
+    async function loadAuthors() {
+        authors = await api('GET', '/api/authors');
+
+        document.getElementById('authors-table').innerHTML = authors.map(a => `
+            <tr>
+                <td>${a.id}</td>
+                <td>${esc(a.firstName)}</td>
+                <td>${esc(a.lastName)}</td>
+                <td>${esc(a.country)}</td>
+                <td>
+                    <button onclick="editAuthor(${a.id})">Редагувати</button>
+                    <button onclick="deleteAuthor(${a.id})">Видалити</button>
+                </td>
+            </tr>`).join('');
+
+        // Список авторів для випадаючого меню у формі книги
+        document.getElementById('book-author').innerHTML = authors.map(a =>
+            `<option value="${a.id}">${esc(a.firstName)} ${esc(a.lastName)}</option>`).join('');
+    }
+
+    async function saveAuthor(event) {
+        event.preventDefault();
+        const id = document.getElementById('author-id').value;
+        const author = {
+            firstName: document.getElementById('author-first-name').value,
+            lastName: document.getElementById('author-last-name').value,
+            country: document.getElementById('author-country').value
+        };
+
+        try {
+            if (id) {
+                await api('PUT', '/api/authors/' + id, author);
+                showMessage('Автора оновлено', false);
+            } else {
+                await api('POST', '/api/authors', author);
+                showMessage('Автора створено', false);
+            }
+            resetAuthorForm();
+            await loadAuthors();
+            await loadBooks();
+        } catch (e) {
+            showMessage(e.message, true);
+        }
+    }
+
+    function editAuthor(id) {
+        const a = authors.find(x => x.id === id);
+        document.getElementById('author-id').value = a.id;
+        document.getElementById('author-first-name').value = a.firstName;
+        document.getElementById('author-last-name').value = a.lastName;
+        document.getElementById('author-country').value = a.country || '';
+        document.getElementById('author-form-title').textContent = 'Редагування автора #' + a.id;
+    }
+
+    function resetAuthorForm() {
+        document.getElementById('author-id').value = '';
+        document.getElementById('author-first-name').value = '';
+        document.getElementById('author-last-name').value = '';
+        document.getElementById('author-country').value = '';
+        document.getElementById('author-form-title').textContent = 'Новий автор';
+    }
+
+    async function deleteAuthor(id) {
+        if (!confirm('Видалити автора #' + id + '?')) return;
+        try {
+            await api('DELETE', '/api/authors/' + id);
+            showMessage('Автора видалено', false);
+            await loadAuthors();
+        } catch (e) {
+            showMessage(e.message, true);
+        }
+    }
+
+    // ===================== КНИГИ =====================
 
     async function loadBooks() {
-        if (!token) {
-            await getToken();
-        }
-        const res = await fetch('/api/books', {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const text = await res.text();
-        document.getElementById('output').textContent = 'Статус: ' + res.status + '\n' + text;
+        books = await api('GET', '/api/books');
+
+        document.getElementById('books-table').innerHTML = books.map(b => `
+            <tr>
+                <td>${b.id}</td>
+                <td>${esc(b.title)}</td>
+                <td>${esc(b.authorName)}</td>
+                <td>${esc(b.isbn)}</td>
+                <td>${esc(b.publicationYear)}</td>
+                <td>${esc(b.availableCopies)}</td>
+                <td>
+                    <button onclick="editBook(${b.id})">Редагувати</button>
+                    <button onclick="deleteBook(${b.id})">Видалити</button>
+                </td>
+            </tr>`).join('');
     }
+
+    async function saveBook(event) {
+        event.preventDefault();
+        const id = document.getElementById('book-id').value;
+        const book = {
+            title: document.getElementById('book-title').value,
+            authorId: numberOrNull(document.getElementById('book-author').value),
+            isbn: document.getElementById('book-isbn').value,
+            publicationYear: numberOrNull(document.getElementById('book-year').value),
+            availableCopies: numberOrNull(document.getElementById('book-copies').value)
+        };
+
+        try {
+            if (id) {
+                await api('PUT', '/api/books/' + id, book);
+                showMessage('Книгу оновлено', false);
+            } else {
+                await api('POST', '/api/books', book);
+                showMessage('Книгу створено', false);
+            }
+            resetBookForm();
+            await loadBooks();
+        } catch (e) {
+            showMessage(e.message, true);
+        }
+    }
+
+    function editBook(id) {
+        const b = books.find(x => x.id === id);
+        document.getElementById('book-id').value = b.id;
+        document.getElementById('book-title').value = b.title;
+        document.getElementById('book-author').value = b.authorId;
+        document.getElementById('book-isbn').value = b.isbn || '';
+        document.getElementById('book-year').value = b.publicationYear ?? '';
+        document.getElementById('book-copies').value = b.availableCopies ?? '';
+        document.getElementById('book-form-title').textContent = 'Редагування книги #' + b.id;
+    }
+
+    function resetBookForm() {
+        document.getElementById('book-id').value = '';
+        document.getElementById('book-title').value = '';
+        document.getElementById('book-isbn').value = '';
+        document.getElementById('book-year').value = '';
+        document.getElementById('book-copies').value = '';
+        document.getElementById('book-form-title').textContent = 'Нова книга';
+    }
+
+    async function deleteBook(id) {
+        if (!confirm('Видалити книгу #' + id + '?')) return;
+        try {
+            await api('DELETE', '/api/books/' + id);
+            showMessage('Книгу видалено', false);
+            await loadBooks();
+        } catch (e) {
+            showMessage(e.message, true);
+        }
+    }
+
+    // ===================== СТАРТ СТОРІНКИ =====================
+
+    async function init() {
+        try {
+            await showUserInfo();
+            await loadAuthors();
+            await loadBooks();
+        } catch (e) {
+            showMessage(e.message, true);
+        }
+    }
+
+    init();
 </script>
 </body>
 </html>
