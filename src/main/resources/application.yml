@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: library
+
+  datasource:
+    url: jdbc:mysql://localhost:3307/library_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: library_user
+    password: library_pass
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+  docker:
+    compose:
+      enabled: true
+      lifecycle-management: start-and-stop
+
+server:
+  port: 8081
+  error:
+    include-message: always

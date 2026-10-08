@@ -1,0 +1,71 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-insert-test-data
+      author: student
+      changes:
+        - insert:
+            tableName: authors
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 1
+              - column:
+                  name: first_name
+                  value: Тарас
+              - column:
+                  name: last_name
+                  value: Шевченко
+              - column:
+                  name: country
+                  value: Україна
+        - insert:
+            tableName: authors
+            columns:
+              - column:
+                  name: id
+                  valueNumeric: 2
+              - column:
+                  name: first_name
+                  value: Леся
+              - column:
+                  name: last_name
+                  value: Українка
+              - column:
+                  name: country
+                  value: Україна
+        - insert:
+            tableName: books
+            columns:
+              - column:
+                  name: title
+                  value: Кобзар
+              - column:
+                  name: isbn
+                  value: 978-966-01-0001-1
+              - column:
+                  name: publication_year
+                  valueNumeric: 1840
+              - column:
+                  name: available_copies
+                  valueNumeric: 5
+              - column:
+                  name: author_id
+                  valueNumeric: 1
+        - insert:
+            tableName: books
+            columns:
+              - column:
+                  name: title
+                  value: Лісова пісня
+              - column:
+                  name: isbn
+                  value: 978-966-01-0002-8
+              - column:
+                  name: publication_year
+                  valueNumeric: 1911
+              - column:
+                  name: available_copies
+                  valueNumeric: 3
+              - column:
+                  name: author_id
+                  valueNumeric: 2
