@@ -20,7 +20,29 @@ spring:
       enabled: true
       lifecycle-management: start-and-stop
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/course-realm
+
+      client:
+        registration:
+          keycloak:
+            client-id: backend-app
+            client-authentication-method: none
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
+            scope: openid, profile
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:8080/realms/course-realm
+
 server:
   port: 8081
   error:
     include-message: always
+
+logging:
+  level:
+    org.springframework.security: DEBUG
