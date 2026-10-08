@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Бібліотека — особистий кабінет</title>
+</head>
+<body>
+<h1>Бібліотека</h1>
+<p>Ви увійшли через Keycloak (OIDC). Сесія активна.</p>
+
+<button onclick="showToken()">Показати мій токен</button>
+<button onclick="loadBooks()">GET /api/books з токеном</button>
+<a href="/logout">Вийти</a>
+
+<pre id="output">(тут з'являться результати)</pre>
+
+<script>
+    let token = null;
+
+    async function getToken() {
+        const res = await fetch('/ui/token');
+        const data = await res.json();
+        token = data.access_token;
+    }
+
+    async function showToken() {
+        await getToken();
+        document.getElementById('output').textContent = token;
+    }
+
+    async function loadBooks() {
+        if (!token) {
+            await getToken();
+        }
+        const res = await fetch('/api/books', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const text = await res.text();
+        document.getElementById('output').textContent = 'Статус: ' + res.status + '\n' + text;
+    }
+</script>
+</body>
+</html>
