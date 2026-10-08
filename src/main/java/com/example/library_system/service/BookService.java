@@ -8,6 +8,7 @@ import com.example.library_system.repository.AuthorRepository;
 import com.example.library_system.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,6 +34,7 @@ public class BookService {
         return bookMapper.toDto(getBookOrThrow(id));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public BookDto create(BookDto dto) {
         Book book = bookMapper.toEntity(dto);
@@ -40,6 +42,7 @@ public class BookService {
         return bookMapper.toDto(bookRepository.save(book));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public BookDto update(Long id, BookDto dto) {
         Book book = getBookOrThrow(id);
