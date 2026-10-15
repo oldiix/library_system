@@ -2,9 +2,9 @@ package com.example.library_system.controller;
 
 import com.example.library_system.dto.BookDto;
 import com.example.library_system.service.BookService;
+import com.example.library_system.web.PostCreated;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,9 +27,9 @@ public class BookController {
         return bookService.findById(id);
     }
 
-    @PostMapping
-    public ResponseEntity<BookDto> create(@Valid @RequestBody BookDto dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(bookService.create(dto));
+    @PostCreated
+    public BookDto create(@Valid @RequestBody BookDto dto) {
+        return bookService.create(dto);
     }
 
     @PutMapping("/{id}")
