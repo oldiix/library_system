@@ -46,8 +46,9 @@ public class BookService {
     @Transactional
     public BookDto update(Long id, BookDto dto) {
         Book book = getBookOrThrow(id);
+        Author author = getAuthorOrThrow(dto.getAuthorId());
         bookMapper.updateEntity(dto, book);
-        book.setAuthor(getAuthorOrThrow(dto.getAuthorId()));
+        book.setAuthor(author);
         return bookMapper.toDto(bookRepository.save(book));
     }
 
