@@ -32,6 +32,24 @@ flowchart LR
 | Create / Update (`POST`, `PUT`) | ❌ | ✅ | `@PreAuthorize` |
 | No valid token | ❌ 401 | ❌ 401 | OAuth2 Resource Server |
 
+## Custom Annotations
+
+Each annotation demonstrates a different Spring mechanism.
+
+| Annotation | Mechanism | What it does |
+|---|---|---|
+| `@ValidBookCopies` | Bean Validation constraint (class-level) | A book without ISBN is a unique item (manuscript, rare print), so it can have at most one copy |
+| `@PostCreated` | Composed annotation | Combines `@PostMapping` and `@ResponseStatus(HttpStatus.CREATED)` for resource creation endpoints |
+| `@CurrentUser` | MVC argument resolver | Injects the authenticated user (username and roles) into controller method parameters |
+
+```java
+@PostCreated
+public BookDto create(@Valid @RequestBody BookDto dto) { ... }
+
+@GetMapping
+public CurrentUserResponse me(@CurrentUser AuthenticatedUser user) { ... }
+```
+
 ## 🚀 Getting Started
 
 **Requirements:** JDK 21, Docker Desktop.
@@ -57,6 +75,7 @@ MySQL and Keycloak start automatically; the Keycloak realm is imported from
 |---|---|
 | Authors | `GET` `POST` `/api/authors`, `GET` `PUT` `DELETE` `/api/authors/{id}` |
 | Books | `GET` `POST` `/api/books`, `GET` `PUT` `DELETE` `/api/books/{id}` |
+| Current user | `GET` `/api/me` — username, roles and whether the user can manage the catalog |
 
 All endpoints require `Authorization: Bearer <token>`.
 
@@ -76,6 +95,12 @@ Tests run without a Spring context, database or network — all dependencies are
 | `AuthorServiceTest` | CRUD logic for authors, 404/409 handling |
 | `BookServiceTest` | CRUD logic for books, author linking, 404 handling |
 | `KeycloakJwtAuthenticationConverterTest` | Mapping Keycloak roles to Spring authorities |
+| `ValidBookCopiesTest` | Custom constraint: valid and invalid books, violation message |
+| `PostCreatedTest` | Composed annotation behaves exactly like the original annotations |
+| `CreateEndpointsTest` | Create endpoints return 201, validation errors return 400 |
+| `CurrentUserArgumentResolverTest` | `supportsParameter` and `resolveArgument` of the resolver |
+| `CurrentUserControllerTest` | `/api/me` uses the resolved user in the response |
+| `WebConfigTest` | The resolver is registered in Spring MVC |
 
 Run tests and generate the coverage report:
 
@@ -90,6 +115,7 @@ The build fails if line or instruction coverage drops below **60%**.
 
 - [x] CRUD, Liquibase, OIDC + JWT security
 - [x] Unit tests with 60%+ coverage
+- [x] Custom annotations: constraint, composed annotation, argument resolver
 - [ ] Book loans and return deadlines
 - [ ] Notifications and statistics
 - [ ] Multi-module Maven structure
