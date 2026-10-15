@@ -66,9 +66,30 @@ Import `postman/Library-API.postman_collection.json`, run the **Auth** folder to
 tokens, then run any request or the whole collection via **Run collection**.
 Every request includes an automated status check.
 
+## ✅ Testing
+
+Business logic is covered by unit tests built with **JUnit 5**, **Mockito** and **AssertJ**.
+Tests run without a Spring context, database or network — all dependencies are mocked.
+
+| Test class | What it covers |
+|---|---|
+| `AuthorServiceTest` | CRUD logic for authors, 404/409 handling |
+| `BookServiceTest` | CRUD logic for books, author linking, 404 handling |
+| `KeycloakJwtAuthenticationConverterTest` | Mapping Keycloak roles to Spring authorities |
+
+Run tests and generate the coverage report:
+
+```bash
+./mvnw clean verify
+```
+
+The JaCoCo report is generated at `target/site/jacoco/index.html`.
+The build fails if line or instruction coverage drops below **60%**.
+
 ## Roadmap
 
 - [x] CRUD, Liquibase, OIDC + JWT security
+- [x] Unit tests with 60%+ coverage
 - [ ] Book loans and return deadlines
 - [ ] Notifications and statistics
 - [ ] Multi-module Maven structure
