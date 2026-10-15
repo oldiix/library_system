@@ -92,18 +92,12 @@
         }
     }
 
-    // Читає вміст токена (середню частину JWT), щоб показати ім'я і ролі
-    function readTokenInfo(token) {
-        const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-        return JSON.parse(atob(payload));
-    }
-
+    // Отримує дані про поточного користувача з сервера (ендпоінт /api/me з @CurrentUser)
     async function showUserInfo() {
-        const info = readTokenInfo(await getToken());
-        const allRoles = info.realm_access ? info.realm_access.roles : [];
-        const roles = allRoles.filter(r => r === 'USER' || r === 'ADMIN');
+        const user = await api('GET', '/api/me');
+        const mode = user.canManageCatalog ? 'адміністратор каталогу' : 'лише перегляд';
         document.getElementById('user-info').textContent =
-            'Ви увійшли як: ' + info.preferred_username + ' (ролі: ' + roles.join(', ') + ')';
+            'Ви увійшли як: ' + user.username + ' (ролі: ' + user.roles.join(', ') + '; ' + mode + ')';
     }
 
     // ===================== ДОПОМІЖНІ ФУНКЦІЇ =====================
