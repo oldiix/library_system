@@ -1,5 +1,6 @@
 package com.example.library_system.dto;
 
+import com.example.library_system.aop.Normalizable;
 import com.example.library_system.validation.ValidBookCopies;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -8,7 +9,7 @@ import lombok.Data;
 
 @Data
 @ValidBookCopies
-public class BookDto {
+public class BookDto implements Normalizable {
 
     private Long id;
 
@@ -27,4 +28,10 @@ public class BookDto {
     private Long authorId;
 
     private String authorName;
+
+    @Override
+    public void normalize() {
+        title = Normalizable.normalizeText(title);
+        isbn = Normalizable.normalizeOptionalText(isbn);
+    }
 }
