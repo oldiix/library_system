@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import com.example.library_system.aop.FeatureToggle;
+import com.example.library_system.aop.Audited;
 
 import java.util.List;
 
@@ -35,6 +36,7 @@ public class AuthorService {
         return authorMapper.toDto(author);
     }
 
+    @Audited(action = "AUTHOR_CREATED")
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public AuthorDto create(AuthorDto dto) {
@@ -43,6 +45,7 @@ public class AuthorService {
         return authorMapper.toDto(saved);
     }
 
+    @Audited(action = "AUTHOR_UPDATED")
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public AuthorDto update(Long id, AuthorDto dto) {
@@ -52,6 +55,7 @@ public class AuthorService {
         return authorMapper.toDto(saved);
     }
 
+    @Audited(action = "AUTHOR_DELETED")
     @FeatureToggle("author-deletion")
     @Transactional
     public void delete(Long id) {

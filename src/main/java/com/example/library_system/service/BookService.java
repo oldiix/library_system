@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import com.example.library_system.aop.FeatureToggle;
+import com.example.library_system.aop.Audited;
 
 import java.util.List;
 
@@ -35,6 +36,7 @@ public class BookService {
         return bookMapper.toDto(getBookOrThrow(id));
     }
 
+    @Audited(action = "BOOK_CREATED")
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public BookDto create(BookDto dto) {
@@ -43,6 +45,7 @@ public class BookService {
         return bookMapper.toDto(bookRepository.save(book));
     }
 
+    @Audited(action = "BOOK_UPDATED")
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public BookDto update(Long id, BookDto dto) {
@@ -53,6 +56,7 @@ public class BookService {
         return bookMapper.toDto(bookRepository.save(book));
     }
 
+    @Audited(action = "BOOK_DELETED")
     @FeatureToggle("book-deletion")
     @Transactional
     public void delete(Long id) {
