@@ -1,5 +1,6 @@
 package com.example.library_system.service;
 
+import com.example.library_system.aop.NormalizeInput;
 import com.example.library_system.dto.AuthorDto;
 import com.example.library_system.entity.Author;
 import com.example.library_system.mapper.AuthorMapper;
@@ -36,6 +37,7 @@ public class AuthorService {
         return authorMapper.toDto(author);
     }
 
+    @NormalizeInput
     @Audited(action = "AUTHOR_CREATED")
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
@@ -45,6 +47,7 @@ public class AuthorService {
         return authorMapper.toDto(saved);
     }
 
+    @NormalizeInput
     @Audited(action = "AUTHOR_UPDATED")
     @PreAuthorize("hasRole('ADMIN')")
     @Transactional
