@@ -59,6 +59,15 @@ public class BookService {
         return bookMapper.toDto(bookRepository.save(book));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public BookDto copy(Long id) {
+        BookDto copy = bookMapper.toDto(getBookOrThrow(id));
+        copy.setId(null);
+        copy.setTitle(copy.getTitle() + " (копія)");
+        return this.create(copy);
+    }
+
     @Audited(action = "BOOK_DELETED")
     @FeatureToggle("book-deletion")
     @Transactional

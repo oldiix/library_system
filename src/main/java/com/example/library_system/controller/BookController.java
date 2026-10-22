@@ -32,6 +32,11 @@ public class BookController {
         return bookService.create(dto);
     }
 
+    @PostCreated("/{id}/copy")
+    public BookDto copy(@PathVariable Long id) {
+        return bookService.copy(id);
+    }
+
     @PutMapping("/{id}")
     public BookDto update(@PathVariable Long id, @Valid @RequestBody BookDto dto) {
         return bookService.update(id, dto);
