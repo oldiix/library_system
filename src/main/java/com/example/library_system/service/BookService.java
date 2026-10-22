@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import com.example.library_system.aop.FeatureToggle;
 
 import java.util.List;
 
@@ -52,6 +53,7 @@ public class BookService {
         return bookMapper.toDto(bookRepository.save(book));
     }
 
+    @FeatureToggle("book-deletion")
     @Transactional
     public void delete(Long id) {
         if (!bookRepository.existsById(id)) {

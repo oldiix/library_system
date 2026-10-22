@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import com.example.library_system.aop.FeatureToggle;
 
 import java.util.List;
 
@@ -51,6 +52,7 @@ public class AuthorService {
         return authorMapper.toDto(saved);
     }
 
+    @FeatureToggle("author-deletion")
     @Transactional
     public void delete(Long id) {
         if (!authorRepository.existsById(id)) {
