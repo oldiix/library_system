@@ -116,4 +116,20 @@ class CreateEndpointsTest {
         result.andExpect(status().isBadRequest());
         verify(bookService, never()).create(any());
     }
+
+    @Test
+    void copyBook_existingId_returns201AndCopy() throws Exception {
+
+        BookDto copy = new BookDto();
+        copy.setId(11L);
+        copy.setTitle("Kobzar (copy)");
+        when(bookService.copy(1L)).thenReturn(copy);
+
+        ResultActions result = mockMvc.perform(post("/api/books/1/copy"));
+
+        result.andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(11))
+                .andExpect(jsonPath("$.title").value("Kobzar (copy)"));
+        verify(bookService).copy(1L);
+    }
 }

@@ -208,6 +208,43 @@ class BookServiceTest {
         verify(bookRepository, never()).save(any());
     }
 
+    // copy
+
+    @Test
+    void copy_existingBook_savesNewBookWithSuffixAndSameAuthor() {
+
+        Author shevchenko = createAuthor(1L, "Тарас", "Шевченко");
+        Book kobzar = createBook(1L, "Кобзар", "978-966-01-0001-1", 1840, 5, shevchenko);
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(kobzar));
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(shevchenko));
+        when(bookRepository.save(any(Book.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookDto result = bookService.copy(1L);
+
+        ArgumentCaptor<Book> captor = ArgumentCaptor.forClass(Book.class);
+        verify(bookRepository).save(captor.capture());
+        Book savedCopy = captor.getValue();
+        assertThat(savedCopy).isNotSameAs(kobzar);
+        assertThat(savedCopy.getId()).isNull();
+        assertThat(savedCopy.getTitle()).isEqualTo("Кобзар (копія)");
+        assertThat(savedCopy.getIsbn()).isEqualTo("978-966-01-0001-1");
+        assertThat(savedCopy.getAuthor()).isSameAs(shevchenko);
+
+        assertThat(result.getTitle()).isEqualTo("Кобзар (копія)");
+    }
+
+    @Test
+    void copy_nonExistingBook_throwsNotFoundAndDoesNotSave() {
+
+        when(bookRepository.findById(99L)).thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> bookService.copy(99L));
+
+        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        verify(bookRepository, never()).save(any());
+    }
+
     // delete
 
     @Test
