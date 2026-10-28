@@ -1,25 +1,14 @@
 spring:
   application:
     name: library
-  quartz:
-    job-store-type: jdbc
-    jdbc:
-      initialize-schema: never
-    overwrite-existing-jobs: false
-    wait-for-jobs-to-complete-on-shutdown: true
-    properties:
-      org.quartz.scheduler.instanceName: library-scheduler
-      org.quartz.scheduler.instanceId: AUTO
-      org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
-      org.quartz.jobStore.tablePrefix: QRTZ_
-      org.quartz.jobStore.misfireThreshold: 60000
-      org.quartz.threadPool.threadCount: 3
 
+  # ===== ЛР1: база даних MySQL (Docker, порт 3307) =====
   datasource:
     url: jdbc:mysql://localhost:3307/library_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: library_user
     password: library_pass
 
+  # ===== ЛР1: Hibernate лише перевіряє схему, створює її Liquibase =====
   jpa:
     hibernate:
       ddl-auto: validate
@@ -28,11 +17,13 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
 
+  # ===== ЛР1: контейнери MySQL і Keycloak стартують разом із застосунком =====
   docker:
     compose:
       enabled: true
       lifecycle-management: start-and-stop
 
+  # ===== ЛР1: безпека — JWT для /api/** і OIDC-вхід для UI =====
   security:
     oauth2:
       resourceserver:
@@ -51,6 +42,21 @@ spring:
           keycloak:
             issuer-uri: http://localhost:8080/realms/course-realm
 
+  # ===== ЛР6: Quartz зберігає розклад у базі; таблиці QRTZ_* створює Liquibase =====
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: never
+    overwrite-existing-jobs: false
+    wait-for-jobs-to-complete-on-shutdown: true
+    properties:
+      org.quartz.scheduler.instanceName: library-scheduler
+      org.quartz.scheduler.instanceId: AUTO
+      org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+      org.quartz.jobStore.tablePrefix: QRTZ_
+      org.quartz.jobStore.misfireThreshold: 60000
+      org.quartz.threadPool.threadCount: 3
+
 server:
   port: 8081
   error:
@@ -58,16 +64,23 @@ server:
     include-binding-errors: always
 
 library:
+  # ===== ЛР4: вимикачі функцій (@FeatureToggle) =====
   features:
     book-deletion: true
     author-deletion: true
+
+  # ===== ЛР5: обмежений пул для @Async =====
   async:
     core-pool-size: 2
     max-pool-size: 4
     queue-capacity: 10
     thread-name-prefix: library-async-
+
+  # ===== ЛР5: імітація повільної пошти =====
   notifications:
-      send-delay: 1s
+    send-delay: 1s
+
+  # ===== ЛР5: імітація повільних зовнішніх сервісів і тайм-аут очікування =====
   external:
     timeout: 2s
     reviews:
@@ -76,6 +89,8 @@ library:
     bookstore:
       delay: 1s
       available: true
+
+  # ===== ЛР6: розклади задач Quartz і часовий пояс =====
   scheduling:
     time-zone-id: Europe/Kyiv
     catalog-normalization-cron: "0 0 3 * * ?"
