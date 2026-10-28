@@ -30,7 +30,12 @@ public class StockReportJob implements Job {
         int threshold = JobParameters.requiredInt(data, THRESHOLD);
         int maxTitles = JobParameters.requiredInt(data, MAX_TITLES);
 
-        StockReport report = stockReportService.generateReport(reportName, threshold, maxTitles);
+        StockReport report;
+        try {
+            report = stockReportService.generateReport(reportName, threshold, maxTitles);
+        } catch (RuntimeException exception) {
+            throw JobFailurePolicy.recordAndWaitForNextRun(context, exception);
+        }
 
         log.info("Задача {} (тригер {}): звіт «{}» за {}, поріг {}, книг — {}",
                 context.getJobDetail().getKey(), context.getTrigger().getKey(),

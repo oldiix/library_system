@@ -22,7 +22,12 @@ public class CatalogNormalizationJob implements Job {
     public void execute(JobExecutionContext context) throws JobExecutionException {
         int batchSize = JobParameters.requiredInt(context.getMergedJobDataMap(), BATCH_SIZE);
 
-        NormalizationResult result = catalogNormalizationService.normalizeCatalog(batchSize);
+        NormalizationResult result;
+        try {
+            result = catalogNormalizationService.normalizeCatalog(batchSize);
+        } catch (RuntimeException exception) {
+            throw JobFailurePolicy.recordAndWaitForNextRun(context, exception);
+        }
 
         log.info("Задача {} (тригер {}) завершена: змінено записів — {}",
                 context.getJobDetail().getKey(), context.getTrigger().getKey(), result.total());
