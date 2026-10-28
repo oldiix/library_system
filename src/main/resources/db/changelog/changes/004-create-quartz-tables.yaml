@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-quartz-tables
+      author: student
+      dbms: mysql
+      comment: Таблиці Quartz Scheduler (QRTZ_*) для JDBC job store. Офіційна схема tables_mysql_innodb.sql
+      changes:
+        - sqlFile:
+            path: db/changelog/sql/quartz-tables-mysql.sql
+            splitStatements: true
+            endDelimiter: ";"
+            stripComments: true
