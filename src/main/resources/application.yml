@@ -53,5 +53,13 @@ library:
     max-pool-size: 4
     queue-capacity: 10
     thread-name-prefix: library-async-
-    notifications:
+  notifications:
       send-delay: 1s
+  external:
+    timeout: 2s
+    reviews:
+      delay: 1s
+      available: true
+    bookstore:
+      delay: 1s
+      available: true
