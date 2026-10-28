@@ -6,6 +6,7 @@ import com.example.library_system.entity.Book;
 import com.example.library_system.mapper.BookMapper;
 import com.example.library_system.repository.AuthorRepository;
 import com.example.library_system.repository.BookRepository;
+import com.example.library_system.notification.BookNotificationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
@@ -42,6 +43,9 @@ class BookServiceTest {
 
     @InjectMocks
     private BookService bookService;
+
+    @Mock
+    private BookNotificationService bookNotificationService;
 
     // findAll
 
@@ -129,6 +133,7 @@ class BookServiceTest {
         assertThat(result.getId()).isEqualTo(10L);
         assertThat(result.getAuthorId()).isEqualTo(1L);
         assertThat(result.getAuthorName()).isEqualTo("Тарас Шевченко");
+        verify(bookNotificationService).notifyNewBook("Заповіт", "Тарас Шевченко");
     }
 
     @Test
@@ -143,6 +148,7 @@ class BookServiceTest {
         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(exception.getReason()).isEqualTo("Автора з id 99 не знайдено");
         verify(bookRepository, never()).save(any());
+        verify(bookNotificationService, never()).notifyNewBook(any(), any());
     }
 
     // update
