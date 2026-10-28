@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-stock-reports-table
+      author: student
+      comment: Звіти про книги з малим запасом, які формує задача Quartz
+      changes:
+        - createTable:
+            tableName: stock_reports
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: report_name
+                  type: VARCHAR(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: report_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: threshold
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: books_count
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: book_titles
+                  type: VARCHAR(2000)
+              - column:
+                  name: generated_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: stock_reports
+            columnNames: report_name, report_date
+            constraintName: uk_stock_reports_name_date

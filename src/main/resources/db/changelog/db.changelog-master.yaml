@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changes/003-insert-test-data.yaml
   - include:
       file: db/changelog/changes/004-create-quartz-tables.yaml
+  - include:
+      file: db/changelog/changes/005-create-stock-reports-table.yaml
