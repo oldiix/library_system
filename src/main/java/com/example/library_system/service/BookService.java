@@ -1,24 +1,27 @@
 package com.example.library_system.service;
 
+import com.example.library_system.aop.Audited;
+import com.example.library_system.aop.FeatureToggle;
 import com.example.library_system.aop.NormalizeInput;
 import com.example.library_system.dto.BookDto;
 import com.example.library_system.entity.Author;
 import com.example.library_system.entity.Book;
 import com.example.library_system.mapper.BookMapper;
+import com.example.library_system.notification.BookNotificationService;
 import com.example.library_system.repository.AuthorRepository;
 import com.example.library_system.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import com.example.library_system.aop.FeatureToggle;
-import com.example.library_system.aop.Audited;
-import com.example.library_system.notification.BookNotificationService;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BookService {
@@ -47,7 +50,7 @@ public class BookService {
         Book book = bookMapper.toEntity(dto);
         book.setAuthor(getAuthorOrThrow(dto.getAuthorId()));
         BookDto created = bookMapper.toDto(bookRepository.save(book));
-        bookNotificationService.notifyNewBook(created.getTitle(), created.getAuthorName());
+        notifyReadersSafely(created);
         return created;
     }
 
@@ -80,6 +83,16 @@ public class BookService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Книгу з id " + id + " не знайдено");
         }
         bookRepository.deleteById(id);
+    }
+
+    private void notifyReadersSafely(BookDto book) {
+        try {
+            bookNotificationService.notifyNewBook(book.getTitle(), book.getAuthorName());
+        } catch (TaskRejectedException exception) {
+
+            log.warn("Пул асинхронних задач переповнений — сповіщення про книгу «{}» пропущено",
+                    book.getTitle());
+        }
     }
 
     private Book getBookOrThrow(Long id) {
