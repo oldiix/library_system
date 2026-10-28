@@ -8,6 +8,8 @@ import org.quartz.Trigger;
 import org.quartz.impl.JobExecutionContextImpl;
 import org.quartz.spi.OperableTrigger;
 import org.quartz.spi.TriggerFiredBundle;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.TriggerBuilder;
 
 import java.util.Date;
 import java.util.List;
@@ -135,6 +137,22 @@ class QuartzJobsConfigTest {
         assertThat(merged.getInt(StockReportJob.THRESHOLD)).isEqualTo(3);
 
         assertThat(merged.getInt(StockReportJob.MAX_TITLES)).isEqualTo(20);
+    }
+
+    @Test
+    void mergedJobData_triggerKeyWithTypo_isIgnoredAndDocumentedDefaultIsUsed() {
+
+        Trigger triggerWithTypo = TriggerBuilder.newTrigger()
+                .withIdentity("stock-report-typo", QuartzJobsConfig.REPORTS_GROUP)
+                .forJob(QuartzJobsConfig.STOCK_REPORT_JOB_KEY)
+                .usingJobData("treshold", 5)
+                .withSchedule(CronScheduleBuilder.cronSchedule("0 0 8 * * ?"))
+                .build();
+
+        JobDataMap merged = mergeLikeQuartz(config.stockReportJobDetail(), triggerWithTypo);
+
+        assertThat(merged.getInt(StockReportJob.THRESHOLD)).isEqualTo(1);
+        assertThat(merged.getInt("treshold")).isEqualTo(5);
     }
 
 

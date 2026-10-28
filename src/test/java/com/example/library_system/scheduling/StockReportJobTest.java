@@ -10,6 +10,11 @@ import org.quartz.JobBuilder;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.TriggerBuilder;
+import org.quartz.JobExecutionException;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.times;
 
 import java.time.LocalDate;
 import java.util.Map;
@@ -52,5 +57,27 @@ class StockReportJobTest {
 
         verify(stockReportService).generateReport("weekly", 3, 20);
         verifyNoMoreInteractions(stockReportService);
+    }
+
+    @Test
+    void execute_serviceFails_errorRecordedWithoutImmediateRefire() {
+
+        when(context.getMergedJobDataMap()).thenReturn(new JobDataMap(Map.of(
+                StockReportJob.REPORT_NAME, "daily",
+                StockReportJob.THRESHOLD, 1,
+                StockReportJob.MAX_TITLES, 20)));
+        when(context.getJobDetail()).thenReturn(JobBuilder.newJob(StockReportJob.class)
+                .withIdentity(QuartzJobsConfig.STOCK_REPORT_JOB_KEY).build());
+        when(context.getTrigger()).thenReturn(TriggerBuilder.newTrigger()
+                .withIdentity(QuartzJobsConfig.STOCK_REPORT_DAILY_TRIGGER_KEY).build());
+        when(stockReportService.generateReport("daily", 1, 20))
+                .thenThrow(new IllegalStateException("Помилка формування звіту"));
+        StockReportJob job = new StockReportJob(stockReportService);
+
+        JobExecutionException exception = assertThrows(JobExecutionException.class, () -> job.execute(context));
+
+        assertThat(exception.refireImmediately()).isFalse();
+        assertThat(exception.unscheduleAllTriggers()).isFalse();
+        verify(stockReportService, times(1)).generateReport("daily", 1, 20);
     }
 }
