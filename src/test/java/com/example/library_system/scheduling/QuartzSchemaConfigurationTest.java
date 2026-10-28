@@ -52,7 +52,7 @@ class QuartzSchemaConfigurationTest {
         assertThat(properties).isNotNull();
         assertThat(properties.getProperty("spring.quartz.job-store-type")).isEqualTo("jdbc");
         assertThat(properties.getProperty("spring.quartz.jdbc.initialize-schema")).isEqualTo("never");
-        assertThat(properties.getProperty("spring.quartz.overwrite-existing-jobs")).isEqualTo("true");
+        assertThat(properties.getProperty("spring.quartz.overwrite-existing-jobs")).isEqualTo("false");
         assertThat(properties.getProperty("spring.quartz.properties.org.quartz.jobStore.tablePrefix"))
                 .isEqualTo("QRTZ_");
     }
