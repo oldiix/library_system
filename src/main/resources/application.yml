@@ -53,3 +53,5 @@ library:
     max-pool-size: 4
     queue-capacity: 10
     thread-name-prefix: library-async-
+    notifications:
+      send-delay: 1s
