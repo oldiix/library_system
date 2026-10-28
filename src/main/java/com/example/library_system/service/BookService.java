@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import com.example.library_system.aop.FeatureToggle;
 import com.example.library_system.aop.Audited;
+import com.example.library_system.notification.BookNotificationService;
 
 import java.util.List;
 
@@ -25,6 +26,7 @@ public class BookService {
     private final BookRepository bookRepository;
     private final AuthorRepository authorRepository;
     private final BookMapper bookMapper;
+    private final BookNotificationService bookNotificationService;
 
     public List<BookDto> findAll() {
         return bookRepository.findAll()
@@ -44,7 +46,9 @@ public class BookService {
     public BookDto create(BookDto dto) {
         Book book = bookMapper.toEntity(dto);
         book.setAuthor(getAuthorOrThrow(dto.getAuthorId()));
-        return bookMapper.toDto(bookRepository.save(book));
+        BookDto created = bookMapper.toDto(bookRepository.save(book));
+        bookNotificationService.notifyNewBook(created.getTitle(), created.getAuthorName());
+        return created;
     }
 
     @NormalizeInput
