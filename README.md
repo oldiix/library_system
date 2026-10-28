@@ -4,6 +4,7 @@
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.16-6DB33F?logo=springboot)
 ![Keycloak](https://img.shields.io/badge/Keycloak-25-4D4D4D?logo=keycloak)
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?logo=mysql&logoColor=white)
+![Quartz](https://img.shields.io/badge/Quartz-2.5-blue)
 ![Coverage](https://img.shields.io/badge/coverage-%E2%89%A560%25-brightgreen)
 
 A library management system built as a semester project for the
@@ -20,7 +21,8 @@ simple web UI for managing authors and books, secured with Keycloak.
 - Custom annotations: validation constraint, composed annotation, argument resolver
 - Aspects: feature toggles, audit trail, input normalization
 - Asynchronous processing in a bounded thread pool with timeouts, fallbacks and overload handling
-- Unit tests with a JaCoCo coverage gate (min. 60%)
+- Scheduled jobs with **Quartz**: the schedule is stored in MySQL and survives restarts
+- Unit and integration tests with a JaCoCo coverage gate (min. 60%)
 - MySQL and Keycloak start automatically with Docker Compose
 
 ## Architecture
@@ -34,6 +36,8 @@ flowchart LR
     API --> C["Controllers"] --> P["Proxy + aspects"] --> S["Services"] --> R["Repositories"] --> DB[("MySQL")]
     S -.->|"@Async"| POOL["library-async-* pool"]
     POOL -.-> EXT["External services"]
+    Q["Quartz scheduler"] -->|"jobs"| S
+    Q <-->|"QRTZ_* tables"| DB
 ```
 
 ## Access Rules
@@ -43,7 +47,7 @@ flowchart LR
 | Read (`GET`) | ✅ | ✅ | SecurityFilterChain |
 | Delete (`DELETE`) | ❌ | ✅ | SecurityFilterChain |
 | Create / Update / Copy (`POST`, `PUT`) | ❌ | ✅ | `@PreAuthorize` |
-| Audit log (`GET /api/audit`) | ❌ | ✅ | `@PreAuthorize` |
+| Audit log, stock reports | ❌ | ✅ | `@PreAuthorize` |
 | No valid token | ❌ 401 | ❌ 401 | OAuth2 Resource Server |
 
 ## Custom Annotations
@@ -52,7 +56,7 @@ flowchart LR
 |---|---|---|
 | `@ValidBookCopies` | Bean Validation constraint (class-level) | A book without ISBN is a unique item, so it can have at most one copy |
 | `@PostCreated` | Composed annotation | Combines `@PostMapping` and `@ResponseStatus(HttpStatus.CREATED)` |
-| `@CurrentUser` | MVC argument resolver | Injects the authenticated user (username and roles) into controller parameters |
+| `@CurrentUser` | MVC argument resolver | Injects the authenticated user into controller parameters |
 
 ## Aspects (AOP)
 
@@ -60,46 +64,59 @@ flowchart LR
 |---|---|---|---|
 | `@FeatureToggle("book-deletion")` | `@Around` | Disable an operation via configuration | `503`, the method is not executed |
 | `@Audited(action = "BOOK_CREATED")` | `@AfterReturning` | Audit trail of successful operations | Entry in `GET /api/audit` |
-| `@NormalizeInput` | `@Before` | Trim and collapse whitespace, blank optional fields → `null` | `"  Kobzar  "` is stored as `"Kobzar"` |
+| `@NormalizeInput` | `@Before` | Trim and collapse whitespace | `"  Kobzar  "` is stored as `"Kobzar"` |
 
-**Self-invocation demo.** `BookService.copy(id)` calls `this.create(...)`, bypassing the Spring
-proxy, so the aspects on `create` are silently skipped. This is intentional — see `SelfInvocationTest`.
+**Self-invocation demo.** `BookService.copy(id)` calls `this.create(...)`, bypassing the proxy,
+so the aspects on `create` are silently skipped — see `SelfInvocationTest`.
 
 ## ⚡ Asynchronous Processing
-
-Slow side effects (~1 s each) run in a dedicated, bounded thread pool instead of blocking the request.
 
 | Operation | Style | Where |
 |---|---|---|
 | Email notification about a new book | Fire-and-forget (`@Async void`) | `BookService.create` |
-| Rating from an external reviews service | `@Async` → `CompletableFuture<BookRating>` | `GET /api/books/{id}/details` |
-| Price and availability from a partner bookstore | `@Async` → `CompletableFuture<StoreOffer>` | `GET /api/books/{id}/details` |
+| Rating from an external reviews service | `@Async` → `CompletableFuture` | `GET /api/books/{id}/details` |
+| Price from a partner bookstore | `@Async` → `CompletableFuture` | `GET /api/books/{id}/details` |
 
-**Executor.** `ThreadPoolTaskExecutor` with core size 2, max size 4, queue capacity 10 and thread
-prefix `library-async-`, set as the default `@Async` executor.
+Bounded `ThreadPoolTaskExecutor` (core 2, max 4, queue 10, prefix `library-async-`).
+Parallel calls are combined with `thenCombine`; failures and 2 s timeouts fall back to
+`available: false`; a full pool returns `503` with `Retry-After` for book details and skips
+notifications with a `WARN` log.
 
-**Parallel calls.** Rating and offer are requested concurrently and combined with `thenCombine`,
-so the details endpoint answers in ~1 s instead of ~2 s.
+## Scheduled Jobs (Quartz)
 
-**Failure handling.**
+The schedule is stored in MySQL (JDBC job store). The `QRTZ_*` tables are created by a
+Liquibase changeset; Spring Boot does not create them (`initialize-schema: never`).
 
-| Situation | Behavior |
+| Job | Trigger | Schedule (Europe/Kyiv) | Parameters | Misfire |
+|---|---|---|---|---|
+| `catalog-normalization` | `catalog-normalization-nightly` | daily at 03:00 | `batchSize=100` | do nothing |
+| `stock-report` | `stock-report-daily` | daily at 08:00 | defaults: `daily`, threshold `1`, `maxTitles=20` | fire once now |
+| `stock-report` | `stock-report-weekly` | Mondays at 09:00 | overrides: `weekly`, threshold `3` | do nothing |
+
+- **Catalog normalization** cleans titles and names stored without normalization
+  (e.g. copies created via self-invocation) — the same rules as `@NormalizeInput`.
+- **Stock report** lists books with few copies left; one report per name and date
+  (`GET /api/reports/stock`, admin only).
+
+**Reliability**
+
+| Concern | Solution |
 |---|---|
-| External service fails | Fallback value (`available: false`), response is still `200` |
-| External service hangs | Waiting stops after a 2 s timeout (`orTimeout`), fallback value is used |
-| Error in a `void` async method | Recorded by `AsyncUncaughtExceptionHandler` (ERROR log) |
-| Pool is full — book details | `503 Service Unavailable` with `Retry-After: 5`, never a random `500` |
-| Pool is full — notification | Notification is skipped with a `WARN` log, the book is still created |
+| Jobs are thin | Each job reads its `JobDataMap` and makes one call to a `@Transactional` service |
+| Idempotency | Normalization only touches dirty records; reports are upserted by name and date (unique key) |
+| Concurrent runs | `@DisallowConcurrentExecution` on both jobs |
+| Failures | Logged at ERROR, no immediate refire, the trigger stays scheduled — the next run retries |
+| Wrong parameters | Missing or malformed keys fail with an explicit message; unknown trigger keys are ignored |
+| Time zone | All cron triggers use `Europe/Kyiv` explicitly |
+| Redeployments | `overwrite-existing-jobs: false` + `QuartzScheduleSynchronizer`: triggers are rescheduled only when their definition changed, so stored state and misfires survive restarts |
 
 ```yaml
 library:
-  async:
-    core-pool-size: 2
-    max-pool-size: 4
-    queue-capacity: 10
-    thread-name-prefix: library-async-
-  external:
-    timeout: 2s
+  scheduling:
+    time-zone-id: Europe/Kyiv
+    catalog-normalization-cron: "0 0 3 * * ?"
+    daily-stock-report-cron: "0 0 8 * * ?"
+    weekly-stock-report-cron: "0 0 9 ? * MON"
 ```
 
 ## Getting Started
@@ -128,16 +145,18 @@ MySQL and Keycloak start automatically; the Keycloak realm is imported from
 | Authors | `GET` `POST` `/api/authors`, `GET` `PUT` `DELETE` `/api/authors/{id}` |
 | Books | `GET` `POST` `/api/books`, `GET` `PUT` `DELETE` `/api/books/{id}`, `POST` `/api/books/{id}/copy` |
 | Book details | `GET` `/api/books/{id}/details` — book + external rating + bookstore offer |
-| Current user | `GET` `/api/me` — username, roles and whether the user can manage the catalog |
-| Audit log | `GET` `/api/audit` — latest audit entries (ADMIN only) |
+| Current user | `GET` `/api/me` |
+| Audit log | `GET` `/api/audit` (ADMIN only) |
+| Stock reports | `GET` `/api/reports/stock` (ADMIN only) |
 
 All endpoints require `Authorization: Bearer <token>`.
 
 ## Testing
 
-Unit tests are built with **JUnit 5**, **Mockito**, **AssertJ** and **Awaitility**. Most tests
-run without a database, network or Spring context; async behavior is verified in minimal Spring
-contexts that contain only the async configuration and the tested beans.
+Tests are built with **JUnit 5**, **Mockito**, **AssertJ** and **Awaitility**. Unit tests run
+without a database or Spring context; async behavior is verified in minimal Spring contexts;
+idempotency of scheduled jobs is verified by integration tests on an in-memory **H2** database
+with the real Liquibase schema; Quartz behavior is verified on a real in-memory scheduler.
 
 ```bash
 ./mvnw clean verify
@@ -153,14 +172,14 @@ The build fails if line or instruction coverage drops below **60%**.
 | Custom annotations | `ValidBookCopiesTest`, `PostCreatedTest`, `CreateEndpointsTest`, `CurrentUserArgumentResolverTest`, `CurrentUserControllerTest`, `WebConfigTest` |
 | Aspects | `FeatureToggleAspectTest`, `FeaturePropertiesTest`, `FeatureToggleProxyTest`, `AuditAspectTest`, `AuditTrailTest`, `AuditProxyTest`, `AuditControllerTest`, `NormalizeInputAspectTest`, `DtoNormalizationTest`, `NormalizeInputProxyTest`, `SelfInvocationTest` |
 | Async | `AsyncConfigTest`, `AsyncExecutorThreadTest`, `LoggingAsyncExceptionHandlerTest`, `BookNotificationServiceTest`, `FireAndForgetTest`, `FakeEmailSenderTest`, `ParallelCallsTest`, `FakeGatewaysTest`, `BookDetailsControllerTest`, `ExecutorRejectionTest`, `OverloadHandlingTest` |
+| Scheduling | `QuartzSchemaConfigurationTest`, `QuartzJobsConfigTest`, `QuartzScheduleSynchronizerTest`, `QuartzExecutionBehaviourTest`, `JobParametersTest`, `CatalogNormalizationJobTest`, `StockReportJobTest`, `CatalogNormalizationServiceTest`, `CatalogNormalizationServiceIntegrationTest`, `StockReportServiceTest`, `StockReportServiceIntegrationTest`, `StockReportControllerTest` |
 
 ## Postman
 
 Import `postman/Library-API.postman_collection.json`, run the **Auth** folder to get
 tokens, then run any request or the whole collection via **Run collection**.
-Every request includes an automated status check.
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 src/main/java/com/example/library_system/
@@ -174,6 +193,7 @@ src/main/java/com/example/library_system/
 ├── mapper/         # MapStruct mappers
 ├── notification/   # asynchronous email notifications
 ├── repository/     # Spring Data JPA repositories
+├── scheduling/     # Quartz jobs, triggers and schedule synchronization
 ├── service/        # business logic
 ├── validation/     # custom Bean Validation constraint
 └── web/            # composed annotation and argument resolver
@@ -186,7 +206,8 @@ src/main/java/com/example/library_system/
 - [x] Custom annotations: constraint, composed annotation, argument resolver
 - [x] AOP: feature toggles, audit trail, input normalization
 - [x] Async processing: bounded executor, parallel calls, timeouts, overload handling
-- [ ] Book loans and return deadlines
+- [x] Scheduled jobs with Quartz: persistent schedule, idempotent jobs, misfire handling
+- [ ] Book loans and return reminders
 - [ ] Multi-module Maven structure
 
 ## 👤 Author
