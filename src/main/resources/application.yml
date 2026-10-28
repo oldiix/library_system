@@ -5,7 +5,7 @@ spring:
     job-store-type: jdbc
     jdbc:
       initialize-schema: never
-    overwrite-existing-jobs: true
+    overwrite-existing-jobs: false
     wait-for-jobs-to-complete-on-shutdown: true
     properties:
       org.quartz.scheduler.instanceName: library-scheduler
