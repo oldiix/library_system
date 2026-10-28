@@ -8,6 +8,8 @@ import com.example.library_system.repository.AuthorRepository;
 import com.example.library_system.repository.BookRepository;
 import com.example.library_system.notification.BookNotificationService;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.task.TaskRejectedException;
+import static org.mockito.Mockito.doThrow;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
@@ -149,6 +151,24 @@ class BookServiceTest {
         assertThat(exception.getReason()).isEqualTo("Автора з id 99 не знайдено");
         verify(bookRepository, never()).save(any());
         verify(bookNotificationService, never()).notifyNewBook(any(), any());
+    }
+
+    @Test
+    void create_notificationPoolFull_bookStillCreatedAndNotificationSkipped() {
+
+        Author shevchenko = createAuthor(1L, "Тарас", "Шевченко");
+        BookDto request = createBookDto(null, "Заповіт", "978-966-01-0003-5", 1845, 4, 1L);
+        Book savedBook = createBook(10L, "Заповіт", "978-966-01-0003-5", 1845, 4, shevchenko);
+        when(authorRepository.findById(1L)).thenReturn(Optional.of(shevchenko));
+        when(bookRepository.save(any(Book.class))).thenReturn(savedBook);
+        doThrow(new TaskRejectedException("Пул переповнений"))
+                .when(bookNotificationService).notifyNewBook(any(), any());
+
+        BookDto result = bookService.create(request);
+
+        assertThat(result.getId()).isEqualTo(10L);
+        verify(bookRepository).save(any(Book.class));
+        verify(bookNotificationService).notifyNewBook("Заповіт", "Тарас Шевченко");
     }
 
     // update
