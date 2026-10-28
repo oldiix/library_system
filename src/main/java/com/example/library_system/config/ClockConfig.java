@@ -1,5 +1,6 @@
 package com.example.library_system.config;
 
+import com.example.library_system.scheduling.SchedulingProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -9,7 +10,7 @@ import java.time.Clock;
 public class ClockConfig {
 
     @Bean
-    public Clock clock() {
-        return Clock.systemUTC();
+    public Clock clock(SchedulingProperties schedulingProperties) {
+        return Clock.system(schedulingProperties.timeZone().toZoneId());
     }
 }
