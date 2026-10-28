@@ -76,3 +76,8 @@ library:
     bookstore:
       delay: 1s
       available: true
+  scheduling:
+    time-zone-id: Europe/Kyiv
+    catalog-normalization-cron: "0 0 3 * * ?"
+    daily-stock-report-cron: "0 0 8 * * ?"
+    weekly-stock-report-cron: "0 0 9 ? * MON"
