@@ -48,3 +48,8 @@ library:
   features:
     book-deletion: true
     author-deletion: true
+  async:
+    core-pool-size: 2
+    max-pool-size: 4
+    queue-capacity: 10
+    thread-name-prefix: library-async-
