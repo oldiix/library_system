@@ -22,6 +22,7 @@
     <modules>
         <module>catalog-service</module>
         <module>common</module>
+        <module>partner-service</module>
     </modules>
 
     <properties>

@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: partner-service
+
+server:
+  port: 8082
+  error:
+    include-message: always
+
+partner:
+  reviews:
+    delay: 1s
+    available: true
+  bookstore:
+    delay: 1s
+    available: true
