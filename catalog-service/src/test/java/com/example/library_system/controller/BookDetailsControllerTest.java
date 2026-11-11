@@ -2,8 +2,8 @@ package com.example.library_system.controller;
 
 import com.example.library_system.dto.BookDetailsResponse;
 import com.example.library_system.dto.BookDto;
-import com.example.library_system.external.BookRating;
-import com.example.library_system.external.StoreOffer;
+import com.example.common.dto.BookRating;
+import com.example.common.dto.StoreOffer;
 import com.example.library_system.service.BookDetailsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,8 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.math.BigDecimal;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

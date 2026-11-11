@@ -1,7 +1,7 @@
 package com.example.library_system.dto;
 
-import com.example.library_system.external.BookRating;
-import com.example.library_system.external.StoreOffer;
+import com.example.common.dto.BookRating;
+import com.example.common.dto.StoreOffer;
 
 public record BookDetailsResponse(BookDto book, BookRating rating, StoreOffer offer) {
 }

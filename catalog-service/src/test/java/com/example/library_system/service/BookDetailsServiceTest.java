@@ -2,9 +2,9 @@ package com.example.library_system.service;
 
 import com.example.library_system.dto.BookDetailsResponse;
 import com.example.library_system.dto.BookDto;
-import com.example.library_system.external.BookRating;
+import com.example.common.dto.BookRating;
 import com.example.library_system.external.ExternalCatalogClient;
-import com.example.library_system.external.StoreOffer;
+import com.example.common.dto.StoreOffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

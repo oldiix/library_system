@@ -1,5 +1,7 @@
 package com.example.library_system.external;
 
+import com.example.common.dto.BookRating;
+import com.example.common.dto.StoreOffer;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
