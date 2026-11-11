@@ -81,15 +81,11 @@ library:
   notifications:
     send-delay: 1s
 
-  # ===== ЛР5: імітація повільних зовнішніх сервісів і тайм-аут очікування =====
   external:
+    partner-url: http://localhost:8082
+    connect-timeout: 1s
+    read-timeout: 3s
     timeout: 2s
-    reviews:
-      delay: 1s
-      available: true
-    bookstore:
-      delay: 1s
-      available: true
 
   # ===== ЛР6: розклади задач Quartz і часовий пояс =====
   scheduling:
