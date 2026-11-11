@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: notification-service
+
+server:
+  port: 8083
+  error:
+    include-message: always
+
+notification:
+  send-delay: 1s
