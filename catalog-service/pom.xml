@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Батько — кореневий POM репозиторію -->
+    <!-- кореневий POM репозиторію -->
     <parent>
         <groupId>com.example</groupId>
         <artifactId>library-system-parent</artifactId>
@@ -16,6 +16,12 @@
     <description>Каталог бібліотеки: книги, автори, безпека, UI, аспекти, асинхронність, Quartz</description>
 
     <dependencies>
+        <!-- Спільні DTO (версія — з кореневого dependencyManagement) -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+
         <!-- Веб і REST -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

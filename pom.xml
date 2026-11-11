@@ -21,6 +21,7 @@
     <!-- Усі модулі, які збираються разом командою mvn verify з кореня -->
     <modules>
         <module>catalog-service</module>
+        <module>common</module>
     </modules>
 
     <properties>
@@ -32,6 +33,11 @@
     <!-- Лише версії: модуль отримає залежність, тільки якщо сам її оголосить -->
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.example</groupId>
+                <artifactId>common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
