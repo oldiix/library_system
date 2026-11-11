@@ -79,7 +79,9 @@ library:
 
   # ===== ЛР5: імітація повільної пошти =====
   notifications:
-    send-delay: 1s
+    url: http://localhost:8083
+    connect-timeout: 1s
+    read-timeout: 5s
 
   external:
     partner-url: http://localhost:8082
