@@ -900,6 +900,205 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Services",
+      "description": "Internal services from lab 7: partner-service (8082) and notification-service (8083). No authentication.",
+      "auth": {
+        "type": "noauth"
+      },
+      "item": [
+        {
+          "name": "Partner rating",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Rating is available\", () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.available).to.be.true;",
+                  "    pm.expect(body.average).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{partnerUrl}}/api/partner/ratings?title=Кобзар",
+              "host": [
+                "{{partnerUrl}}"
+              ],
+              "path": [
+                "api",
+                "partner",
+                "ratings"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Кобзар"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Partner offer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Offer is available\", () => {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.available).to.be.true;",
+                  "    pm.expect(body.priceUah).to.be.a(\"number\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{partnerUrl}}/api/partner/offers?title=Кобзар",
+              "host": [
+                "{{partnerUrl}}"
+              ],
+              "path": [
+                "api",
+                "partner",
+                "offers"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Кобзар"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send notification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 202\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{notificationUrl}}/api/notifications",
+              "host": [
+                "{{notificationUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"recipient\": \"readers@library.example\",\r\n  \"subject\": \"Перевірка notification-service\",\r\n  \"body\": \"Тестовий лист з Postman\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Notification without recipient → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{notificationUrl}}/api/notifications",
+              "host": [
+                "{{notificationUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"recipient\": \"\",\r\n  \"subject\": \"Без адреси\",\r\n  \"body\": \"Текст\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sent notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Sent letters are listed\", () => {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{notificationUrl}}/api/notifications",
+              "host": [
+                "{{notificationUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "auth": {
@@ -960,6 +1159,14 @@
     {
       "key": "bookId",
       "value": ""
+    },
+    {
+      "key": "partnerUrl",
+      "value": "http://localhost:8082"
+    },
+    {
+      "key": "notificationUrl",
+      "value": "http://localhost:8083"
     }
   ]
 }
