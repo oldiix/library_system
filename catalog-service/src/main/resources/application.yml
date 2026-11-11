@@ -1,6 +1,6 @@
 spring:
   application:
-    name: library
+    name: catalog-service
 
   # ===== ЛР1: база даних MySQL (Docker, порт 3307) =====
   datasource:
@@ -21,6 +21,7 @@ spring:
   docker:
     compose:
       enabled: true
+      file: ../compose.yaml
       lifecycle-management: start-and-stop
 
   # ===== ЛР1: безпека — JWT для /api/** і OIDC-вхід для UI =====
