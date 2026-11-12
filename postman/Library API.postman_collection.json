@@ -900,6 +900,877 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Lab 3 - Custom Validation",
+      "item": [
+        {
+          "name": "Book without ISBN, 3 copies -> 400",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Рукопис Кобзаря\",\r\n  \"publicationYear\": 1840,\r\n  \"availableCopies\": 3,\r\n  \"authorId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Book without ISBN, 1 copy -> 201",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Рукопис Кобзаря\",\r\n  \"publicationYear\": 1840,\r\n  \"availableCopies\": 1,\r\n  \"authorId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Book with ISBN, 10 copies -> 201",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Кобзар (ювілейне видання)\",\r\n  \"isbn\": \"978-966-01-0010-3\",\r\n  \"publicationYear\": 2014,\r\n  \"availableCopies\": 10,\r\n  \"authorId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Lab 3 - Current user",
+      "item": [
+        {
+          "name": "Me as alice (ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Resolved current user is alice with admin rights\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.username).to.eql(\"alice\");\r\n    pm.expect(body.roles).to.include(\"ADMIN\");\r\n    pm.expect(body.canManageCatalog).to.eql(true);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Me as bob (USER)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Resolved current user is bob without admin rights\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.username).to.eql(\"bob\");\r\n    pm.expect(body.roles).to.eql([\"USER\"]);\r\n    pm.expect(body.canManageCatalog).to.eql(false);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Me without token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Lab 4 - AOP",
+      "item": [
+        {
+          "name": "Audit - create book (alice)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.collectionVariables.set(\"auditBookId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Audit test book\",\r\n  \"isbn\": \"978-966-01-0020-2\",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Audit - delete book (alice)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{auditBookId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{auditBookId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Audit - read log (alice)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Latest entries: deleted, then created by alice\", () => {\r\n    const entries = pm.response.json();\r\n    pm.expect(entries[0].action).to.eql(\"BOOK_DELETED\");\r\n    pm.expect(entries[0].username).to.eql(\"alice\");\r\n    pm.expect(entries[1].action).to.eql(\"BOOK_CREATED\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Audit - read log as bob → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Normalize - create book with messy input",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.test(\"Input was normalized by the aspect\", () => {\r\n    const book = pm.response.json();\r\n    pm.expect(book.title).to.eql(\"Кобзар (ілюстроване видання)\");\r\n    pm.expect(book.isbn).to.eql(null);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"   Кобзар    (ілюстроване   видання)   \",\r\n  \"isbn\": \"   \",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 1,\r\n  \"authorId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Self-invocation - create book (external call)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.collectionVariables.set(\"selfInvocationBookId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Self-invocation demo\",\r\n  \"isbn\": \"978-966-01-0030-1\",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Self-invocation - audit after external call",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"External call was audited\", () => {\r\n    const entries = pm.response.json();\r\n    pm.expect(entries[0].action).to.eql(\"BOOK_CREATED\");\r\n    pm.expect(entries[0].arguments).to.include(\"Self-invocation demo\");\r\n});\r\npm.collectionVariables.set(\"auditCountBeforeCopy\", pm.response.json().length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Self-invocation - copy book (this.create)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Copy created without any error\", () => {\r\n    pm.response.to.have.status(201);\r\n    pm.expect(pm.response.json().title).to.eql(\"Self-invocation demo (копія)\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{selfInvocationBookId}}/copy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{selfInvocationBookId}}",
+                "copy"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Self-invocation - audit after copy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Self-invocation was NOT audited (silently)\", () => {\r\n    const entries = pm.response.json();\r\n    const countBefore = Number(pm.collectionVariables.get(\"auditCountBeforeCopy\"));\r\n    pm.expect(entries.length).to.eql(countBefore);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Lab 5 - Async",
+      "item": [
+        {
+          "name": "Book details (parallel calls)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Rating and offer are combined into one response\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.book.id).to.eql(1);\r\n    pm.expect(body.rating.available).to.eql(true);\r\n    pm.expect(body.offer.available).to.eql(true);\r\n});\r\npm.test(\"Calls ran in parallel: faster than two sequential calls (2 s)\", () => {\r\n    pm.expect(pm.response.responseTime).to.be.below(1800);\r\n});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "setTimeout(() => {}, 5000);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/1/details",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "1",
+                "details"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Fire-and-forget - create book (fast response)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.test(\"Response does not wait for the 1-second notification\", () => {\r\n    pm.expect(pm.response.responseTime).to.be.below(800);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"title\": \"Async notification demo\",\r\n  \"isbn\": \"978-966-01-0040-0\",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Book details - not found → 404",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/999/details",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "999",
+                "details"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Lab 6 - Quartz",
+      "item": [
+        {
+          "name": "Stock reports (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"One report per name and date\", () => {\r\n    const reports = pm.response.json();\r\n    const keys = reports.map(r => r.reportName + \"|\" + r.reportDate);\r\n    pm.expect(new Set(keys).size).to.eql(keys.length);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/stock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "stock"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stock reports as bob → 403",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{userToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/stock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "stock"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Lab 7 - Services",
+      "item": [
+        {
+          "name": "Partner rating",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Rating is available\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.available).to.be.true;\r\n    pm.expect(body.average).to.be.a(\"number\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{partnerUrl}}/api/partner/ratings?title=Кобзар",
+              "host": [
+                "{{partnerUrl}}"
+              ],
+              "path": [
+                "api",
+                "partner",
+                "ratings"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Кобзар"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Partner offer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Offer is available\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.available).to.be.true;\r\n    pm.expect(body.priceUah).to.be.a(\"number\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{partnerUrl}}/api/partner/offers?title=Кобзар",
+              "host": [
+                "{{partnerUrl}}"
+              ],
+              "path": [
+                "api",
+                "partner",
+                "offers"
+              ],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Кобзар"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send notification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 202\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"recipient\": \"readers@library.example\",\r\n  \"subject\": \"Перевірка notification-service\",\r\n  \"body\": \"Тестовий лист з Postman\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{notificationUrl}}/api/notifications",
+              "host": [
+                "{{notificationUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Notification without recipient -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"recipient\": \"\",\r\n  \"subject\": \"Без адреси\",\r\n  \"body\": \"Текст\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{notificationUrl}}/api/notifications",
+              "host": [
+                "{{notificationUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sent notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Sent letters are listed\", () => {\r\n    pm.expect(pm.response.json()).to.be.an(\"array\").that.is.not.empty;\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{notificationUrl}}/api/notifications",
+              "host": [
+                "{{notificationUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "noauth"
+      }
     }
   ],
   "auth": {
@@ -959,6 +1830,26 @@
     },
     {
       "key": "bookId",
+      "value": ""
+    },
+    {
+      "key": "auditBookId",
+      "value": ""
+    },
+    {
+      "key": "selfInvocationBookId",
+      "value": ""
+    },
+    {
+      "key": "auditCountBeforeCopy",
+      "value": ""
+    },
+    {
+      "key": "partnerUrl",
+      "value": ""
+    },
+    {
+      "key": "notificationUrl",
       "value": ""
     }
   ]
