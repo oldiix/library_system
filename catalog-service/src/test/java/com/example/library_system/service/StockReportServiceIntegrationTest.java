@@ -2,6 +2,7 @@ package com.example.library_system.service;
 
 import com.example.library_system.entity.Book;
 import com.example.library_system.entity.StockReport;
+import com.example.library_system.messaging.LibraryEventPublisher;
 import com.example.library_system.repository.BookRepository;
 import com.example.library_system.repository.StockReportRepository;
 import org.junit.jupiter.api.Test;
@@ -11,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -18,6 +20,9 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @DataJpaTest
 @Import({StockReportService.class, StockReportServiceIntegrationTest.FixedClockConfig.class})
@@ -34,6 +39,9 @@ class StockReportServiceIntegrationTest {
 
     @Autowired
     private TestEntityManager entityManager;
+
+    @MockitoBean
+    private LibraryEventPublisher eventPublisher;
 
     @Test
     void generateReport_runTwiceSameDay_oneReportAndSecondRunChangesNothing() {
@@ -52,6 +60,7 @@ class StockReportServiceIntegrationTest {
         assertThat(stored.getReportDate()).isEqualTo(LocalDate.of(2026, 10, 26));
         assertThat(stored.getBooksCount()).isEqualTo(1);
         assertThat(stored.getBookTitles()).isEqualTo("Лісова пісня");
+        verify(eventPublisher, times(1)).stockReportGenerated(any());
     }
 
     @Test

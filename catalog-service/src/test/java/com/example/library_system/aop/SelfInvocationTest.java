@@ -9,7 +9,7 @@ import com.example.library_system.mapper.BookMapper;
 import com.example.library_system.repository.AuthorRepository;
 import com.example.library_system.repository.BookRepository;
 import com.example.library_system.service.BookService;
-import com.example.library_system.notification.BookNotificationService;
+import com.example.library_system.messaging.LibraryEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,7 +39,7 @@ class SelfInvocationTest {
     private AuthorRepository authorRepository;
 
     @Mock
-    private BookNotificationService bookNotificationService;
+    private LibraryEventPublisher eventPublisher;
 
     private AuditTrail auditTrail;
     private BookService bookServiceProxy;
@@ -47,7 +47,7 @@ class SelfInvocationTest {
 
     @BeforeEach
     void setUp() {
-        BookService target = new BookService(bookRepository, authorRepository, Mappers.getMapper(BookMapper.class), bookNotificationService);
+        BookService target = new BookService(bookRepository, authorRepository, Mappers.getMapper(BookMapper.class), eventPublisher);
 
         auditTrail = new AuditTrail();
         AspectJProxyFactory factory = new AspectJProxyFactory(target);

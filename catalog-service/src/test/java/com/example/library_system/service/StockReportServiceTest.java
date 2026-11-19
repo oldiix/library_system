@@ -2,6 +2,7 @@ package com.example.library_system.service;
 
 import com.example.library_system.entity.Book;
 import com.example.library_system.entity.StockReport;
+import com.example.library_system.messaging.LibraryEventPublisher;
 import com.example.library_system.repository.BookRepository;
 import com.example.library_system.repository.StockReportRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -32,12 +34,15 @@ class StockReportServiceTest {
     @Mock
     private StockReportRepository stockReportRepository;
 
+    @Mock
+    private LibraryEventPublisher eventPublisher;
+
     private StockReportService stockReportService;
 
     @BeforeEach
     void setUp() {
         Clock clock = Clock.fixed(Instant.parse("2026-10-26T06:00:00Z"), ZoneId.of("Europe/Kyiv"));
-        stockReportService = new StockReportService(bookRepository, stockReportRepository, clock);
+        stockReportService = new StockReportService(bookRepository, stockReportRepository, clock, eventPublisher);
     }
 
     @Test
@@ -53,6 +58,7 @@ class StockReportServiceTest {
 
         assertThat(report.getBooksCount()).isEqualTo(3);
         assertThat(report.getBookTitles()).isEqualTo("Альфа; Бета; … ще 1");
+        verify(eventPublisher).stockReportGenerated(report);
     }
 
     @Test
@@ -62,7 +68,7 @@ class StockReportServiceTest {
                 () -> stockReportService.generateReport("daily", -1, 20));
 
         assertThat(exception.getMessage()).contains("Поріг", "-1");
-        verifyNoInteractions(bookRepository, stockReportRepository);
+        verifyNoInteractions(bookRepository, stockReportRepository, eventPublisher);
     }
 
     private static Book book(String title) {
