@@ -23,6 +23,8 @@ spring:
       enabled: true
       file: ../compose.yaml
       lifecycle-management: start-and-stop
+      start:
+        skip: never
 
   # ===== ЛР1: безпека — JWT для /api/** і OIDC-вхід для UI =====
   security:
@@ -95,3 +97,9 @@ library:
     catalog-normalization-cron: "0 0 3 * * ?"
     daily-stock-report-cron: "0 0 8 * * ?"
     weekly-stock-report-cron: "0 0 9 ? * MON"
+
+rabbitmq:
+  host: ${RABBITMQ_HOST:localhost}
+  port: ${RABBITMQ_PORT:5672}
+  username: ${RABBITMQ_USERNAME:library}
+  password: ${RABBITMQ_PASSWORD:library_pass}

@@ -9,3 +9,9 @@ server:
 
 notification:
   send-delay: 1s
+
+rabbitmq:
+      host: ${RABBITMQ_HOST:localhost}
+      port: ${RABBITMQ_PORT:5672}
+      username: ${RABBITMQ_USERNAME:library}
+      password: ${RABBITMQ_PASSWORD:library_pass}
