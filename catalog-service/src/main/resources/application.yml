@@ -85,12 +85,6 @@ library:
     queue-capacity: 10
     thread-name-prefix: library-async-
 
-  # ===== ЛР5: імітація повільної пошти =====
-  notifications:
-    url: http://localhost:8083
-    connect-timeout: 1s
-    read-timeout: 5s
-
   external:
     partner-url: http://localhost:8082
     connect-timeout: 1s
