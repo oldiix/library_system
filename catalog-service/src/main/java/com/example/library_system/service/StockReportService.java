@@ -3,6 +3,7 @@ package com.example.library_system.service;
 import com.example.library_system.dto.StockReportResponse;
 import com.example.library_system.entity.Book;
 import com.example.library_system.entity.StockReport;
+import com.example.library_system.messaging.LibraryEventPublisher;
 import com.example.library_system.repository.BookRepository;
 import com.example.library_system.repository.StockReportRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class StockReportService {
     private final BookRepository bookRepository;
     private final StockReportRepository stockReportRepository;
     private final Clock clock;
+    private final LibraryEventPublisher eventPublisher;
 
     @Transactional
     public StockReport generateReport(String reportName, int threshold, int maxTitles) {
@@ -59,6 +61,7 @@ public class StockReportService {
         report.setBookTitles(titles);
         report.setGeneratedAt(LocalDateTime.now(clock));
         StockReport saved = stockReportRepository.save(report);
+        eventPublisher.stockReportGenerated(saved);
 
         log.info("Звіт «{}» за {}: книг із запасом ≤ {} — {}",
                 reportName, reportDate, threshold, lowStockBooks.size());

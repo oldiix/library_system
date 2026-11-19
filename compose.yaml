@@ -41,6 +41,35 @@ services:
       - services
     ports:
       - "8083:8083"
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: library
+      RABBITMQ_PASSWORD: library_pass
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: library-rabbitmq
+    hostname: library-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: library
+      RABBITMQ_DEFAULT_PASS: library_pass
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    labels:
+      org.springframework.boot.ignore: "true"
 
 volumes:
   mysql_data:
+  rabbitmq_data:

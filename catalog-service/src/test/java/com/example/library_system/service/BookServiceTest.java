@@ -6,10 +6,8 @@ import com.example.library_system.entity.Book;
 import com.example.library_system.mapper.BookMapper;
 import com.example.library_system.repository.AuthorRepository;
 import com.example.library_system.repository.BookRepository;
-import com.example.library_system.notification.BookNotificationService;
+import com.example.library_system.messaging.LibraryEventPublisher;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.task.TaskRejectedException;
-import static org.mockito.Mockito.doThrow;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
@@ -47,7 +45,7 @@ class BookServiceTest {
     private BookService bookService;
 
     @Mock
-    private BookNotificationService bookNotificationService;
+    private LibraryEventPublisher eventPublisher;
 
     // findAll
 
@@ -135,7 +133,7 @@ class BookServiceTest {
         assertThat(result.getId()).isEqualTo(10L);
         assertThat(result.getAuthorId()).isEqualTo(1L);
         assertThat(result.getAuthorName()).isEqualTo("Тарас Шевченко");
-        verify(bookNotificationService).notifyNewBook("Заповіт", "Тарас Шевченко");
+        verify(eventPublisher).bookCreated(10L, "Заповіт", "Тарас Шевченко");
     }
 
     @Test
@@ -150,25 +148,7 @@ class BookServiceTest {
         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(exception.getReason()).isEqualTo("Автора з id 99 не знайдено");
         verify(bookRepository, never()).save(any());
-        verify(bookNotificationService, never()).notifyNewBook(any(), any());
-    }
-
-    @Test
-    void create_notificationPoolFull_bookStillCreatedAndNotificationSkipped() {
-
-        Author shevchenko = createAuthor(1L, "Тарас", "Шевченко");
-        BookDto request = createBookDto(null, "Заповіт", "978-966-01-0003-5", 1845, 4, 1L);
-        Book savedBook = createBook(10L, "Заповіт", "978-966-01-0003-5", 1845, 4, shevchenko);
-        when(authorRepository.findById(1L)).thenReturn(Optional.of(shevchenko));
-        when(bookRepository.save(any(Book.class))).thenReturn(savedBook);
-        doThrow(new TaskRejectedException("Пул переповнений"))
-                .when(bookNotificationService).notifyNewBook(any(), any());
-
-        BookDto result = bookService.create(request);
-
-        assertThat(result.getId()).isEqualTo(10L);
-        verify(bookRepository).save(any(Book.class));
-        verify(bookNotificationService).notifyNewBook("Заповіт", "Тарас Шевченко");
+        verify(eventPublisher, never()).bookCreated(any(), any(), any());
     }
 
     // update
@@ -274,28 +254,30 @@ class BookServiceTest {
     // delete
 
     @Test
-    void delete_existingBook_deletesBook() {
+    void delete_existingBook_deletesBookAndPublishesEvent() {
 
-        when(bookRepository.existsById(1L)).thenReturn(true);
+        Book kobzar = createBook(1L, "Кобзар", "978-966-01-0001-1", 1840, 5, createAuthor(1L, "Тарас", "Шевченко"));
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(kobzar));
 
         bookService.delete(1L);
 
-        verify(bookRepository).deleteById(1L);
+        verify(bookRepository).delete(kobzar);
+        verify(eventPublisher).bookDeleted(1L, "Кобзар");
     }
 
     @Test
-    void delete_nonExistingBook_throwsNotFoundAndDoesNotDelete() {
+    void delete_nonExistingBook_throwsNotFoundAndPublishesNothing() {
 
-        when(bookRepository.existsById(99L)).thenReturn(false);
+        when(bookRepository.findById(99L)).thenReturn(Optional.empty());
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> bookService.delete(99L));
 
         assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(exception.getReason()).isEqualTo("Книгу з id 99 не знайдено");
-        verify(bookRepository, never()).deleteById(anyLong());
+        verify(bookRepository, never()).delete(any(Book.class));
+        verify(eventPublisher, never()).bookDeleted(anyLong(), any());
     }
-
 
     private static Author createAuthor(Long id, String firstName, String lastName) {
         Author author = new Author();

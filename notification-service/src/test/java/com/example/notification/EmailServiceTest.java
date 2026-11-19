@@ -2,12 +2,11 @@ package com.example.notification;
 
 import com.example.common.dto.NotificationRequest;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EmailServiceTest {
@@ -15,30 +14,24 @@ class EmailServiceTest {
     private final EmailService service = new EmailService(Duration.ZERO);
 
     @Test
-    void send_validRequest_letterIsRecordedAsSent() {
-
+    void send_validRequest_completesWithoutError() {
         NotificationRequest letter = new NotificationRequest("readers@library.example", "Нова книга", "Текст");
 
-        service.send(letter);
-
-        assertThat(service.sentLetters()).containsExactly(letter);
+        assertThatCode(() -> service.send(letter)).doesNotThrowAnyException();
     }
 
     @Test
-    void send_blankRecipient_throwsBadRequestAndSendsNothing() {
-
+    void send_blankRecipient_throwsClearError() {
         NotificationRequest letter = new NotificationRequest(" ", "Нова книга", "Текст");
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> service.send(letter));
 
-        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(service.sentLetters()).isEmpty();
+        assertThat(exception.getMessage()).contains("отримувача");
     }
 
     @Test
     void send_interrupted_throwsAndKeepsInterruptFlag() {
-
         EmailService slowService = new EmailService(Duration.ofSeconds(5));
         Thread.currentThread().interrupt();
 
@@ -46,6 +39,5 @@ class EmailServiceTest {
                 new NotificationRequest("readers@library.example", "Тема", "Текст")));
 
         assertThat(Thread.interrupted()).isTrue();
-        assertThat(slowService.sentLetters()).isEmpty();
     }
 }

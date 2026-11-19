@@ -1,49 +1,40 @@
 package com.example.notification;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class NotificationControllerTest {
 
-    private MockMvc mockMvc;
-
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(
-                new NotificationController(new EmailService(Duration.ZERO))).build();
-    }
-
     @Test
-    void send_validLetter_returns202AndLetterAppearsInSentList() throws Exception {
-
-        mockMvc.perform(post("/api/notifications")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipient\":\"readers@library.example\",\"subject\":\"Нова книга\",\"body\":\"Текст\"}"))
-                .andExpect(status().isAccepted());
+    void findAll_processedEvents_areVisibleThroughEndpoint() throws Exception {
+        NotificationStore store = new NotificationStore();
+        UUID eventId = UUID.randomUUID();
+        store.save(new Notification(eventId, "BookCreatedEvent", "readers@library.example",
+                "Нова книга в бібліотеці: Kobzar", "Текст", Instant.now()));
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new NotificationController(store)).build();
 
         mockMvc.perform(get("/api/notifications"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].recipient").value("readers@library.example"))
-                .andExpect(jsonPath("$[0].subject").value("Нова книга"));
+                .andExpect(jsonPath("$[0].eventId").value(eventId.toString()))
+                .andExpect(jsonPath("$[0].eventType").value("BookCreatedEvent"))
+                .andExpect(jsonPath("$[0].recipient").value("readers@library.example"));
     }
 
     @Test
-    void send_blankRecipient_returns400() throws Exception {
+    void findAll_nothingProcessed_returnsEmptyList() throws Exception {
+        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(new NotificationController(new NotificationStore())).build();
 
-        mockMvc.perform(post("/api/notifications")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"recipient\":\"\",\"subject\":\"Нова книга\",\"body\":\"Текст\"}"))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/notifications"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
     }
 }
