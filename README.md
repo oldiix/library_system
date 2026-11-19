@@ -6,6 +6,7 @@
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-4479A1?logo=mysql&logoColor=white)
 ![Quartz](https://img.shields.io/badge/Quartz-2.5-blue)
 ![Maven](https://img.shields.io/badge/Maven-multi--module-C71A36?logo=apachemaven)
+![RabbitMQ](https://img.shields.io/badge/RabbitMQ-4-FF6600?logo=rabbitmq&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![Coverage](https://img.shields.io/badge/coverage-%E2%89%A560%25-brightgreen)
 
@@ -27,7 +28,8 @@ simple web UI for managing authors and books, secured with Keycloak.
 - Unit and integration tests with a JaCoCo coverage gate (min. 60%)
 - MySQL and Keycloak start automatically with Docker Compose
 - **Multi-module Maven** build: three independent services and a shared `common` module
-- Services talk to each other over **HTTP** (`RestClient`); each one has its own `Dockerfile`
+- The catalog calls `partner-service` over **HTTP** (`RestClient`); each service has its own `Dockerfile`
+- Domain events go through **RabbitMQ**: published after commit, consumed idempotently, nothing lost while the consumer is down
 
 ## Services
 
@@ -39,14 +41,15 @@ class, `application.yml`, port, tests and `Dockerfile`.
 |---|---|---|---|
 | `catalog-service` | 8081 | Books, authors, security, UI, aspects, async, Quartz | `common` |
 | `partner-service` | 8082 | Book ratings (reviews service) and bookstore offers | `common` |
-| `notification-service` | 8083 | Accepts and sends email notifications | `common` |
-| `common` | — | Shared DTOs only: `BookRating`, `StoreOffer`, `NotificationRequest` | — |
+| `notification-service` | 8083 | Consumes library events from RabbitMQ and sends email notifications | `common` |
+| `common` | — | Shared DTOs and events only: `BookRating`, `StoreOffer`, `NotificationRequest`, `BookCreatedEvent`, `BookDeletedEvent`, `StockReportGeneratedEvent` | — |
 
 ```mermaid
 flowchart LR
     Client["Postman / Browser"] --> CAT["catalog-service :8081"]
     CAT -->|"GET /api/partner/ratings, /offers"| PAR["partner-service :8082"]
-    CAT -->|"POST /api/notifications"| NOT["notification-service :8083"]
+    CAT -->|"events after commit"| MQ[["RabbitMQ :5672"]]
+    MQ -->|"notification.library-events"| NOT["notification-service :8083"]
     CAT --> DB[("MySQL")]
     CAT -.-> KC["Keycloak :8080"]
     CAT -. uses .-> COM["common (DTOs)"]
@@ -76,11 +79,11 @@ com.example:notification-service:jar:0.0.1-SNAPSHOT
 +- com.example:common:jar:0.0.1-SNAPSHOT:compile
 ```
 
-The catalog only knows the other services' URLs (`library.external.partner-url`,
-`library.notifications.url`). The async timeouts and fallbacks protect it from real network
-failures: if `partner-service` is down, book details still return `200` with
-`available: false`; if `notification-service` is down, the book is still created and the
-failure is logged.
+The catalog only knows the partner service URL (`library.external.partner-url`) and the broker
+address. The async timeouts and fallbacks protect it from real network failures: if
+`partner-service` is down, book details still return `200` with `available: false`. The catalog
+does not call `notification-service` at all: it publishes events to RabbitMQ, so the consumer
+can be stopped without losing anything.
 
 ## Catalog Architecture
 
@@ -176,13 +179,45 @@ library:
     weekly-stock-report-cron: "0 0 9 ? * MON"
 ```
 
+## Message Broker (RabbitMQ)
+
+`catalog-service` (producer) and `notification-service` (consumer) exchange domain events through
+RabbitMQ, described in `compose.yaml`. The services share only the event records from `common`.
+
+| Business action | Event | Routing key | Result in `notification-service` |
+|---|---|---|---|
+| A book is created | `BookCreatedEvent` | `book.created` | Letter to readers, entry in `GET /api/notifications` |
+| A book is deleted | `BookDeletedEvent` | `book.deleted` | Letter to readers, entry in `GET /api/notifications` |
+| The Quartz job generates a stock report | `StockReportGeneratedEvent` | `stock-report.generated` | Letter to the administrator, entry in `GET /api/notifications` |
+
+```mermaid
+flowchart LR
+    S["BookService / StockReportService<br/>@Transactional"] -->|"ApplicationEvent"| R["BrokerEventRelay<br/>AFTER_COMMIT"]
+    R -->|"JSON, persistent"| X{{"library.events (topic)"}}
+    X --> Q[["notification.library-events (durable)"]]
+    Q --> L["LibraryEventListener"] --> H["LibraryEventHandler<br/>skip known eventId"]
+    Q -.->|"after 3 failed attempts"| DLQ[["notification.library-events.dlq"]]
+```
+
+| Concern | Solution |
+|---|---|
+| One action, one event | Each business method publishes exactly one event with a new `eventId` |
+| Only after commit | `@TransactionalEventListener(phase = AFTER_COMMIT)`; a rolled back action publishes nothing |
+| No HTTP between the services | The catalog has no URL of `notification-service`; the consumer does not depend on catalog classes |
+| Consumer is down | Durable exchange and queue, persistent messages, ack after successful processing: messages wait in the queue |
+| Duplicate delivery | The consumer remembers processed `eventId`s and skips repeats |
+| Broken messages | 3 attempts with backoff, then the message goes to the dead-letter queue instead of looping |
+| Broker address | `${RABBITMQ_HOST:localhost}`: `rabbitmq` in Docker Compose, `localhost` from the IDE |
+
+RabbitMQ management UI: http://localhost:15672 (`library` / `library_pass`).
+
 ## Getting Started
 
 **Requirements:** JDK 21, Docker Desktop.
 
 **Option 1: everything from IntelliJ IDEA.** Run `PartnerServiceApplication`,
 `NotificationServiceApplication` and `LibrarySystemApplication` (working directory
-`$MODULE_WORKING_DIR$`). MySQL and Keycloak start automatically with the catalog; the Keycloak
+`$MODULE_WORKING_DIR$`). MySQL, Keycloak and RabbitMQ start automatically with the catalog; the Keycloak
 realm is imported from `keycloak/course-realm.json`.
 
 **Option 2: partner and notification services in Docker.**
@@ -203,6 +238,7 @@ Then run only `LibrarySystemApplication` from IntelliJ IDEA. Stop the containers
 | Partner service | http://localhost:8082/api/partner |
 | Notification service | http://localhost:8083/api/notifications |
 | Keycloak admin | http://localhost:8080 (`admin` / `admin`) |
+| RabbitMQ UI | http://localhost:15672 (`library` / `library_pass`) |
 
 | User | Password | Roles |
 |---|---|---|
@@ -227,7 +263,7 @@ Internal service APIs (no authentication, called by the catalog):
 | Service | Endpoints |
 |---|---|
 | `partner-service` | `GET` `/api/partner/ratings?title=`, `GET` `/api/partner/offers?title=` (`503` when a partner is unavailable) |
-| `notification-service` | `POST` `/api/notifications` (`202`, `400` without recipient or subject), `GET` `/api/notifications` (sent letters) |
+| `notification-service` | `GET` `/api/notifications` (events processed from the broker) |
 
 ## Testing
 
@@ -243,38 +279,35 @@ with the real Liquibase schema; Quartz behavior is verified on a real in-memory 
 JaCoCo reports are generated per module at `<module>/target/site/jacoco/index.html`.
 The build fails if line or instruction coverage of any module drops below **60%**.
 
-| Module | Tests | Line coverage |
-|---|---:|---:|
-| `common` | 3 | 100% |
-| `partner-service` | 6 | 91% |
-| `notification-service` | 5 | 100% |
-| `catalog-service` | 141 | 90% |
-
 | Area | Test classes |
 |---|---|
 | Services | `AuthorServiceTest`, `BookServiceTest`, `BookDetailsServiceTest` |
 | Security | `KeycloakJwtAuthenticationConverterTest` |
 | Custom annotations | `ValidBookCopiesTest`, `PostCreatedTest`, `CreateEndpointsTest`, `CurrentUserArgumentResolverTest`, `CurrentUserControllerTest`, `WebConfigTest` |
 | Aspects | `FeatureToggleAspectTest`, `FeaturePropertiesTest`, `FeatureToggleProxyTest`, `AuditAspectTest`, `AuditTrailTest`, `AuditProxyTest`, `AuditControllerTest`, `NormalizeInputAspectTest`, `DtoNormalizationTest`, `NormalizeInputProxyTest`, `SelfInvocationTest` |
-| Async | `AsyncConfigTest`, `AsyncExecutorThreadTest`, `LoggingAsyncExceptionHandlerTest`, `BookNotificationServiceTest`, `FireAndForgetTest`, `ParallelCallsTest`, `BookDetailsControllerTest`, `ExecutorRejectionTest`, `OverloadHandlingTest` |
-| HTTP clients | `PartnerServiceGatewayTest`, `HttpNotificationSenderTest` |
+| Async | `AsyncConfigTest`, `AsyncExecutorThreadTest`, `LoggingAsyncExceptionHandlerTest`, `ParallelCallsTest`, `BookDetailsControllerTest`, `ExecutorRejectionTest`, `OverloadHandlingTest` |
+| HTTP clients | `PartnerServiceGatewayTest` |
+| Messaging (catalog) | `MessagingConfigTest`, `LibraryEventPublisherTest`, `BrokerEventRelayTest`, `AfterCommitPublicationTest`, `BrokerAddressTest` |
+| Messaging (consumer) | `MessagingConfigTest`, `LibraryEventHandlerTest`, `LibraryEventListenerTest`, `BrokerSettingsTest` |
 | Partner service | `ReviewsServiceTest`, `BookstoreServiceTest`, `PartnerControllerTest` |
 | Notification service | `EmailServiceTest`, `NotificationControllerTest` |
-| Common | `CommonDtoTest` |
+| Common | `CommonDtoTest`, `LibraryEventsTest` |
 | Scheduling | `QuartzSchemaConfigurationTest`, `QuartzJobsConfigTest`, `QuartzScheduleSynchronizerTest`, `QuartzExecutionBehaviourTest`, `JobParametersTest`, `CatalogNormalizationJobTest`, `StockReportJobTest`, `CatalogNormalizationServiceTest`, `CatalogNormalizationServiceIntegrationTest`, `StockReportServiceTest`, `StockReportServiceIntegrationTest`, `StockReportControllerTest` |
 
 ## Postman
 
 Import `postman/Library API.postman_collection.json`, run the **Auth** folder to get
 tokens, then run any request or the whole collection via **Run collection**.
-The **Services** folder calls `partner-service` and `notification-service` directly.
+The **Lab 7 - Services** folder calls `partner-service` directly; **Lab 8 - Message broker**
+creates and deletes a book and checks that `notification-service` processed both events, and that
+a failed action publishes nothing.
 
 ## Project Structure
 
 ```
 library-repo/
 ├── pom.xml                 # root POM: modules, shared dependencies and plugins
-├── compose.yaml            # MySQL, Keycloak, partner and notification services
+├── compose.yaml            # MySQL, Keycloak, RabbitMQ, partner and notification services
 ├── common/                 # shared DTOs (records only, no Spring)
 ├── catalog-service/        # main application, port 8081
 │   ├── Dockerfile
@@ -287,7 +320,7 @@ library-repo/
 │       ├── entity/         # JPA entities
 │       ├── external/       # async client and HTTP gateway to partner-service
 │       ├── mapper/         # MapStruct mappers
-│       ├── notification/   # async notifications sent to notification-service
+│       ├── messaging/      # domain events published to RabbitMQ after commit
 │       ├── repository/     # Spring Data JPA repositories
 │       ├── scheduling/     # Quartz jobs, triggers and schedule synchronization
 │       ├── service/        # business logic
@@ -295,7 +328,7 @@ library-repo/
 │       └── web/            # composed annotation and argument resolver
 ├── partner-service/        # ratings and bookstore offers, port 8082
 │   └── Dockerfile
-└── notification-service/   # email notifications, port 8083
+└── notification-service/   # consumes events from RabbitMQ, port 8083
     └── Dockerfile
 ```
 
@@ -308,6 +341,7 @@ library-repo/
 - [x] Async processing: bounded executor, parallel calls, timeouts, overload handling
 - [x] Scheduled jobs with Quartz: persistent schedule, idempotent jobs, misfire handling
 - [x] Multi-module Maven structure: separate services, shared `common`, Dockerfiles
+- [x] Message broker: domain events through RabbitMQ, idempotent consumer, dead-letter queue
 - [ ] Book loans and return reminders
 
 ## 👤 Author
