@@ -42,5 +42,21 @@ services:
     ports:
       - "8083:8083"
 
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: library-rabbitmq
+    hostname: library-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: library
+      RABBITMQ_DEFAULT_PASS: library_pass
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    labels:
+      org.springframework.boot.ignore: "true"
+
 volumes:
   mysql_data:
+  rabbitmq_data:
