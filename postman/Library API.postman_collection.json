@@ -1,1856 +1,1993 @@
 {
-  "info": {
-    "_postman_id": "c8a16eac-7cc8-40e9-b55b-fa986e61330a",
-    "name": "Library API",
-    "description": "_**Collection for defending lab-01 \"Spring Security\".**_\n\nOrder:\n\n1. First, execute the requests from the _**Auth**_ folder (obtain tokens for Alice and Bob).\n    \n2. Then proceed with the CRUD scenarios, error cases, and security scenarios.\n    \n\n**Alice** - ADMIN, **Bob** - USER.  \nApplication: `localhost:8081`, Keycloak: `localhost:8080`.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "54797090",
-    "_collection_link": "https://go.postman.co/collection/54797090-c8a16eac-7cc8-40e9-b55b-fa986e61330a?source=collection_link"
-  },
-  "item": [
-    {
-      "name": "Auth",
-      "item": [
-        {
-          "name": "Get token - alice (ADMIN)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\nconst data = pm.response.json();\r\npm.collectionVariables.set(\"adminToken\", data.access_token);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "client_id",
-                  "value": "backend-app"
-                },
-                {
-                  "key": "grant_type",
-                  "value": "password"
-                },
-                {
-                  "key": "username",
-                  "value": "alice"
-                },
-                {
-                  "key": "password",
-                  "value": "alice123"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{keycloakUrl}}/realms/course-realm/protocol/openid-connect/token",
-              "host": [
-                "{{keycloakUrl}}"
-              ],
-              "path": [
-                "realms",
-                "course-realm",
-                "protocol",
-                "openid-connect",
-                "token"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get token - bob (USER)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\nconst data = pm.response.json();\r\npm.collectionVariables.set(\"userToken\", data.access_token);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "urlencoded",
-              "urlencoded": [
-                {
-                  "key": "client_id",
-                  "value": "backend-app"
-                },
-                {
-                  "key": "grant_type",
-                  "value": "password"
-                },
-                {
-                  "key": "username",
-                  "value": "bob"
-                },
-                {
-                  "key": "password",
-                  "value": "bob123"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{keycloakUrl}}/realms/course-realm/protocol/openid-connect/token",
-              "host": [
-                "{{keycloakUrl}}"
-              ],
-              "path": [
-                "realms",
-                "course-realm",
-                "protocol",
-                "openid-connect",
-                "token"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Authors",
-      "item": [
-        {
-          "name": "Get all authors",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/authors",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "authors"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get author by id",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/authors/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "authors",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create author",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.collectionVariables.set(\"authorId\", pm.response.json().id);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"firstName\": \"Іван\",\r\n  \"lastName\": \"Франко\",\r\n  \"country\": \"Україна\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/authors",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "authors"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update author",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"firstName\": \"Іван\",\r\n  \"lastName\": \"Франко\",\r\n  \"country\": \"Австро-Угорщина\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/authors/{{authorId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "authors",
-                "{{authorId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete author",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/authors/{{authorId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "authors",
-                "{{authorId}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Books",
-      "item": [
-        {
-          "name": "Get all books",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get book by id",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/books/2",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books",
-                "2"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create book",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.collectionVariables.set(\"bookId\", pm.response.json().id);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Заповіт\",\r\n  \"isbn\": \"978-966-01-0003-5\",\r\n  \"publicationYear\": 1845,\r\n  \"availableCopies\": 4,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update book",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "PUT",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Заповіт\",\r\n  \"isbn\": \"978-966-01-0003-5\",\r\n  \"publicationYear\": 1845,\r\n  \"availableCopies\": 10,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books/{{bookId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books",
-                "{{bookId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete book",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Заповіт\",\r\n  \"isbn\": \"978-966-01-0003-5\",\r\n  \"publicationYear\": 1845,\r\n  \"availableCopies\": 4,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "text"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books/{{bookId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books",
-                "{{bookId}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Errors",
-      "item": [
-        {
-          "name": "Author not found",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/authors/999",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "authors",
-                "999"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Book with empty title",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{   \r\n    \"title\": \"\", \r\n\"availableCopies\": 1, \r\n\"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Book with missing author",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"title\": \"Тест\",\r\n    \"availableCopies\": 1,\r\n    \"authorId\": 999\r\n  }",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete author with books",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 409\", () => pm.response.to.have.status(409));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/authors/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "authors",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Security",
-      "item": [
-        {
-          "name": "No token → 401",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 401\", () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Invalid token → 401",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 401\", () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "abc123",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "USER reads books → 200",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{userToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "USER deletes book → 403 (filter chain)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{userToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/books/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "USER creates book → 403 (@PreAuthorize)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{userToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Мойсей\",\r\n  \"isbn\": \"978-966-01-0004-2\",\r\n  \"publicationYear\": 1905,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "USER updates author → 403 (@PreAuthorize)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{userToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"firstName\": \"Тарас\",\r\n  \"lastName\": \"Шевченко\",\r\n  \"country\": \"Україна\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/authors/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "authors",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "ADMIN creates book → 201",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Мойсей\",\r\n  \"isbn\": \"978-966-01-0004-2\",\r\n  \"publicationYear\": 1905,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Lab 3 - Custom Validation",
-      "item": [
-        {
-          "name": "Book without ISBN, 3 copies -> 400",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Рукопис Кобзаря\",\r\n  \"publicationYear\": 1840,\r\n  \"availableCopies\": 3,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Book without ISBN, 1 copy -> 201",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Рукопис Кобзаря\",\r\n  \"publicationYear\": 1840,\r\n  \"availableCopies\": 1,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Book with ISBN, 10 copies -> 201",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Кобзар (ювілейне видання)\",\r\n  \"isbn\": \"978-966-01-0010-3\",\r\n  \"publicationYear\": 2014,\r\n  \"availableCopies\": 10,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Lab 3 - Current user",
-      "item": [
-        {
-          "name": "Me as alice (ADMIN)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Resolved current user is alice with admin rights\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.username).to.eql(\"alice\");\r\n    pm.expect(body.roles).to.include(\"ADMIN\");\r\n    pm.expect(body.canManageCatalog).to.eql(true);\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "me"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Me as bob (USER)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Resolved current user is bob without admin rights\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.username).to.eql(\"bob\");\r\n    pm.expect(body.roles).to.eql([\"USER\"]);\r\n    pm.expect(body.canManageCatalog).to.eql(false);\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{userToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "me"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Me without token → 401",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 401\", () => pm.response.to.have.status(401));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "me"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Lab 4 - AOP",
-      "item": [
-        {
-          "name": "Audit - create book (alice)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.collectionVariables.set(\"auditBookId\", pm.response.json().id);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Audit test book\",\r\n  \"isbn\": \"978-966-01-0020-2\",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Audit - delete book (alice)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/books/{{auditBookId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books",
-                "{{auditBookId}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Audit - read log (alice)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Latest entries: deleted, then created by alice\", () => {\r\n    const entries = pm.response.json();\r\n    pm.expect(entries[0].action).to.eql(\"BOOK_DELETED\");\r\n    pm.expect(entries[0].username).to.eql(\"alice\");\r\n    pm.expect(entries[1].action).to.eql(\"BOOK_CREATED\");\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/audit",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "audit"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Audit - read log as bob → 403",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{userToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/audit",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "audit"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Normalize - create book with messy input",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.test(\"Input was normalized by the aspect\", () => {\r\n    const book = pm.response.json();\r\n    pm.expect(book.title).to.eql(\"Кобзар (ілюстроване видання)\");\r\n    pm.expect(book.isbn).to.eql(null);\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"   Кобзар    (ілюстроване   видання)   \",\r\n  \"isbn\": \"   \",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 1,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Self-invocation - create book (external call)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.collectionVariables.set(\"selfInvocationBookId\", pm.response.json().id);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Self-invocation demo\",\r\n  \"isbn\": \"978-966-01-0030-1\",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Self-invocation - audit after external call",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"External call was audited\", () => {\r\n    const entries = pm.response.json();\r\n    pm.expect(entries[0].action).to.eql(\"BOOK_CREATED\");\r\n    pm.expect(entries[0].arguments).to.include(\"Self-invocation demo\");\r\n});\r\npm.collectionVariables.set(\"auditCountBeforeCopy\", pm.response.json().length);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/audit",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "audit"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Self-invocation - copy book (this.create)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Copy created without any error\", () => {\r\n    pm.response.to.have.status(201);\r\n    pm.expect(pm.response.json().title).to.eql(\"Self-invocation demo (копія)\");\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/books/{{selfInvocationBookId}}/copy",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books",
-                "{{selfInvocationBookId}}",
-                "copy"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Self-invocation - audit after copy",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Self-invocation was NOT audited (silently)\", () => {\r\n    const entries = pm.response.json();\r\n    const countBefore = Number(pm.collectionVariables.get(\"auditCountBeforeCopy\"));\r\n    pm.expect(entries.length).to.eql(countBefore);\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/audit",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "audit"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Lab 5 - Async",
-      "item": [
-        {
-          "name": "Book details (parallel calls)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Rating and offer are combined into one response\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.book.id).to.eql(1);\r\n    pm.expect(body.rating.available).to.eql(true);\r\n    pm.expect(body.offer.available).to.eql(true);\r\n});\r\npm.test(\"Calls ran in parallel: faster than two sequential calls (2 s)\", () => {\r\n    pm.expect(pm.response.responseTime).to.be.below(1800);\r\n});"
-                ]
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "setTimeout(() => {}, 5000);"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/books/1/details",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books",
-                "1",
-                "details"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Fire-and-forget - create book (fast response)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.test(\"Response does not wait for the 1-second notification\", () => {\r\n    pm.expect(pm.response.responseTime).to.be.below(800);\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"title\": \"Async notification demo\",\r\n  \"isbn\": \"978-966-01-0040-0\",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/books",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Book details - not found → 404",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/books/999/details",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "books",
-                "999",
-                "details"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Lab 6 - Quartz",
-      "item": [
-        {
-          "name": "Stock reports (admin)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"One report per name and date\", () => {\r\n    const reports = pm.response.json();\r\n    const keys = reports.map(r => r.reportName + \"|\" + r.reportDate);\r\n    pm.expect(new Set(keys).size).to.eql(keys.length);\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/reports/stock",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "reports",
-                "stock"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Stock reports as bob → 403",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{userToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/reports/stock",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "reports",
-                "stock"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Lab 7 - Services",
-      "item": [
-        {
-          "name": "Partner rating",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Rating is available\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.available).to.be.true;\r\n    pm.expect(body.average).to.be.a(\"number\");\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{partnerUrl}}/api/partner/ratings?title=Кобзар",
-              "host": [
-                "{{partnerUrl}}"
-              ],
-              "path": [
-                "api",
-                "partner",
-                "ratings"
-              ],
-              "query": [
-                {
-                  "key": "title",
-                  "value": "Кобзар"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Partner offer",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Offer is available\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.available).to.be.true;\r\n    pm.expect(body.priceUah).to.be.a(\"number\");\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{partnerUrl}}/api/partner/offers?title=Кобзар",
-              "host": [
-                "{{partnerUrl}}"
-              ],
-              "path": [
-                "api",
-                "partner",
-                "offers"
-              ],
-              "query": [
-                {
-                  "key": "title",
-                  "value": "Кобзар"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Send notification",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 202\", () => pm.response.to.have.status(202));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"recipient\": \"readers@library.example\",\r\n  \"subject\": \"Перевірка notification-service\",\r\n  \"body\": \"Тестовий лист з Postman\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{notificationUrl}}/api/notifications",
-              "host": [
-                "{{notificationUrl}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Notification without recipient -> 400",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"recipient\": \"\",\r\n  \"subject\": \"Без адреси\",\r\n  \"body\": \"Текст\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{notificationUrl}}/api/notifications",
-              "host": [
-                "{{notificationUrl}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Sent notifications",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Sent letters are listed\", () => {\r\n    pm.expect(pm.response.json()).to.be.an(\"array\").that.is.not.empty;\r\n});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{notificationUrl}}/api/notifications",
-              "host": [
-                "{{notificationUrl}}"
-              ],
-              "path": [
-                "api",
-                "notifications"
-              ]
-            }
-          },
-          "response": []
-        }
-      ],
-      "auth": {
-        "type": "noauth"
-      }
-    }
-  ],
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      {
-        "key": "token",
-        "value": "{{adminToken}}",
-        "type": "string"
-      }
-    ]
-  },
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "packages": {},
-        "requests": {},
-        "exec": [
-          ""
-        ]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "packages": {},
-        "requests": {},
-        "exec": [
-          ""
-        ]
-      }
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": ""
-    },
-    {
-      "key": "keycloakUrl",
-      "value": ""
-    },
-    {
-      "key": "adminToken",
-      "value": ""
-    },
-    {
-      "key": "userToken",
-      "value": ""
-    },
-    {
-      "key": "authorId",
-      "value": ""
-    },
-    {
-      "key": "bookId",
-      "value": ""
-    },
-    {
-      "key": "auditBookId",
-      "value": ""
-    },
-    {
-      "key": "selfInvocationBookId",
-      "value": ""
-    },
-    {
-      "key": "auditCountBeforeCopy",
-      "value": ""
-    },
-    {
-      "key": "partnerUrl",
-      "value": ""
-    },
-    {
-      "key": "notificationUrl",
-      "value": ""
-    }
-  ]
+	"info": {
+		"_postman_id": "c8a16eac-7cc8-40e9-b55b-fa986e61330a",
+		"name": "Library API",
+		"description": "_**Collection for defending lab-01 \"Spring Security\".**_\n\nOrder:\n\n1. First, execute the requests from the _**Auth**_ folder (obtain tokens for Alice and Bob).\n    \n2. Then proceed with the CRUD scenarios, error cases, and security scenarios.\n    \n\n**Alice** - ADMIN, **Bob** - USER.  \nApplication: `localhost:8081`, Keycloak: `localhost:8080`.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "54797090",
+		"_collection_link": "https://go.postman.co/collection/54797090-c8a16eac-7cc8-40e9-b55b-fa986e61330a?source=collection_link"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Get token - alice (ADMIN)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\nconst data = pm.response.json();\r\npm.collectionVariables.set(\"adminToken\", data.access_token);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "client_id",
+									"value": "backend-app"
+								},
+								{
+									"key": "grant_type",
+									"value": "password"
+								},
+								{
+									"key": "username",
+									"value": "alice"
+								},
+								{
+									"key": "password",
+									"value": "alice123"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloakUrl}}/realms/course-realm/protocol/openid-connect/token",
+							"host": [
+								"{{keycloakUrl}}"
+							],
+							"path": [
+								"realms",
+								"course-realm",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get token - bob (USER)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\nconst data = pm.response.json();\r\npm.collectionVariables.set(\"userToken\", data.access_token);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "client_id",
+									"value": "backend-app"
+								},
+								{
+									"key": "grant_type",
+									"value": "password"
+								},
+								{
+									"key": "username",
+									"value": "bob"
+								},
+								{
+									"key": "password",
+									"value": "bob123"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{keycloakUrl}}/realms/course-realm/protocol/openid-connect/token",
+							"host": [
+								"{{keycloakUrl}}"
+							],
+							"path": [
+								"realms",
+								"course-realm",
+								"protocol",
+								"openid-connect",
+								"token"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Authors",
+			"item": [
+				{
+					"name": "Get all authors",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authors",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authors"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get author by id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authors/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authors",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create author",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.collectionVariables.set(\"authorId\", pm.response.json().id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"firstName\": \"Іван\",\r\n  \"lastName\": \"Франко\",\r\n  \"country\": \"Україна\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authors",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authors"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update author",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"firstName\": \"Іван\",\r\n  \"lastName\": \"Франко\",\r\n  \"country\": \"Австро-Угорщина\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authors/{{authorId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authors",
+								"{{authorId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete author",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authors/{{authorId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authors",
+								"{{authorId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Books",
+			"item": [
+				{
+					"name": "Get all books",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get book by id",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/2",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.collectionVariables.set(\"bookId\", pm.response.json().id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Заповіт\",\r\n  \"isbn\": \"978-966-01-0003-5\",\r\n  \"publicationYear\": 1845,\r\n  \"availableCopies\": 4,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Заповіт\",\r\n  \"isbn\": \"978-966-01-0003-5\",\r\n  \"publicationYear\": 1845,\r\n  \"availableCopies\": 10,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books/{{bookId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"{{bookId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Заповіт\",\r\n  \"isbn\": \"978-966-01-0003-5\",\r\n  \"publicationYear\": 1845,\r\n  \"availableCopies\": 4,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books/{{bookId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"{{bookId}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Errors",
+			"item": [
+				{
+					"name": "Author not found",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authors/999",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authors",
+								"999"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Book with empty title",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{   \r\n    \"title\": \"\", \r\n\"availableCopies\": 1, \r\n\"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Book with missing author",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"Тест\",\r\n    \"availableCopies\": 1,\r\n    \"authorId\": 999\r\n  }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete author with books",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 409\", () => pm.response.to.have.status(409));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/authors/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authors",
+								"1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Security",
+			"item": [
+				{
+					"name": "No token → 401",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 401\", () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invalid token → 401",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 401\", () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "abc123",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USER reads books → 200",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{userToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USER deletes book → 403 (filter chain)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{userToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USER creates book → 403 (@PreAuthorize)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{userToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Мойсей\",\r\n  \"isbn\": \"978-966-01-0004-2\",\r\n  \"publicationYear\": 1905,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "USER updates author → 403 (@PreAuthorize)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{userToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"firstName\": \"Тарас\",\r\n  \"lastName\": \"Шевченко\",\r\n  \"country\": \"Україна\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/authors/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"authors",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ADMIN creates book → 201",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 201\", () => pm.response.to.have.status(201));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Мойсей\",\r\n  \"isbn\": \"978-966-01-0004-2\",\r\n  \"publicationYear\": 1905,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Lab 3 - Custom Validation",
+			"item": [
+				{
+					"name": "Book without ISBN, 3 copies -> 400",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Рукопис Кобзаря\",\r\n  \"publicationYear\": 1840,\r\n  \"availableCopies\": 3,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Book without ISBN, 1 copy -> 201",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Рукопис Кобзаря\",\r\n  \"publicationYear\": 1840,\r\n  \"availableCopies\": 1,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Book with ISBN, 10 copies -> 201",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Кобзар (ювілейне видання)\",\r\n  \"isbn\": \"978-966-01-0010-3\",\r\n  \"publicationYear\": 2014,\r\n  \"availableCopies\": 10,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Lab 3 - Current user",
+			"item": [
+				{
+					"name": "Me as alice (ADMIN)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Resolved current user is alice with admin rights\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.username).to.eql(\"alice\");\r\n    pm.expect(body.roles).to.include(\"ADMIN\");\r\n    pm.expect(body.canManageCatalog).to.eql(true);\r\n});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Me as bob (USER)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Resolved current user is bob without admin rights\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.username).to.eql(\"bob\");\r\n    pm.expect(body.roles).to.eql([\"USER\"]);\r\n    pm.expect(body.canManageCatalog).to.eql(false);\r\n});"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{userToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"me"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Me without token → 401",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 401\", () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"me"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Lab 4 - AOP",
+			"item": [
+				{
+					"name": "Audit - create book (alice)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.collectionVariables.set(\"auditBookId\", pm.response.json().id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Audit test book\",\r\n  \"isbn\": \"978-966-01-0020-2\",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Audit - delete book (alice)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/{{auditBookId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"{{auditBookId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Audit - read log (alice)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Latest entries: deleted, then created by alice\", () => {\r\n    const entries = pm.response.json();\r\n    pm.expect(entries[0].action).to.eql(\"BOOK_DELETED\");\r\n    pm.expect(entries[0].username).to.eql(\"alice\");\r\n    pm.expect(entries[1].action).to.eql(\"BOOK_CREATED\");\r\n});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"audit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Audit - read log as bob → 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{userToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"audit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Normalize - create book with messy input",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.test(\"Input was normalized by the aspect\", () => {\r\n    const book = pm.response.json();\r\n    pm.expect(book.title).to.eql(\"Кобзар (ілюстроване видання)\");\r\n    pm.expect(book.isbn).to.eql(null);\r\n});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"   Кобзар    (ілюстроване   видання)   \",\r\n  \"isbn\": \"   \",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 1,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Self-invocation - create book (external call)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.collectionVariables.set(\"selfInvocationBookId\", pm.response.json().id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Self-invocation demo\",\r\n  \"isbn\": \"978-966-01-0030-1\",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Self-invocation - audit after external call",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"External call was audited\", () => {\r\n    const entries = pm.response.json();\r\n    pm.expect(entries[0].action).to.eql(\"BOOK_CREATED\");\r\n    pm.expect(entries[0].arguments).to.include(\"Self-invocation demo\");\r\n});\r\npm.collectionVariables.set(\"auditCountBeforeCopy\", pm.response.json().length);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"audit"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Self-invocation - copy book (this.create)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Copy created without any error\", () => {\r\n    pm.response.to.have.status(201);\r\n    pm.expect(pm.response.json().title).to.eql(\"Self-invocation demo (копія)\");\r\n});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/{{selfInvocationBookId}}/copy",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"{{selfInvocationBookId}}",
+								"copy"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Self-invocation - audit after copy",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Self-invocation was NOT audited (silently)\", () => {\r\n    const entries = pm.response.json();\r\n    const countBefore = Number(pm.collectionVariables.get(\"auditCountBeforeCopy\"));\r\n    pm.expect(entries.length).to.eql(countBefore);\r\n});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"audit"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Lab 5 - Async",
+			"item": [
+				{
+					"name": "Book details (parallel calls)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Rating and offer are combined into one response\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.book.id).to.eql(1);\r\n    pm.expect(body.rating.available).to.eql(true);\r\n    pm.expect(body.offer.available).to.eql(true);\r\n});\r\npm.test(\"Calls ran in parallel: faster than two sequential calls (2 s)\", () => {\r\n    pm.expect(pm.response.responseTime).to.be.below(1800);\r\n});"
+								]
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"setTimeout(() => {}, 5000);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/1/details",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"1",
+								"details"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Fire-and-forget - create book (fast response)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 201\", () => pm.response.to.have.status(201));\r\npm.test(\"Response does not wait for the 1-second notification\", () => {\r\n    pm.expect(pm.response.responseTime).to.be.below(800);\r\n});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"title\": \"Async notification demo\",\r\n  \"isbn\": \"978-966-01-0040-0\",\r\n  \"publicationYear\": 2026,\r\n  \"availableCopies\": 2,\r\n  \"authorId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Book details - not found → 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/999/details",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"999",
+								"details"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Lab 6 - Quartz",
+			"item": [
+				{
+					"name": "Stock reports (admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"One report per name and date\", () => {\r\n    const reports = pm.response.json();\r\n    const keys = reports.map(r => r.reportName + \"|\" + r.reportDate);\r\n    pm.expect(new Set(keys).size).to.eql(keys.length);\r\n});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/stock",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reports",
+								"stock"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Stock reports as bob → 403",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{userToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/stock",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reports",
+								"stock"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Lab 7 - Services",
+			"item": [
+				{
+					"name": "Partner rating",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Rating is available\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.available).to.be.true;\r\n    pm.expect(body.average).to.be.a(\"number\");\r\n});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{partnerUrl}}/api/partner/ratings?title=Кобзар",
+							"host": [
+								"{{partnerUrl}}"
+							],
+							"path": [
+								"api",
+								"partner",
+								"ratings"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "Кобзар"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Partner offer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));\r\npm.test(\"Offer is available\", () => {\r\n    const body = pm.response.json();\r\n    pm.expect(body.available).to.be.true;\r\n    pm.expect(body.priceUah).to.be.a(\"number\");\r\n});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{partnerUrl}}/api/partner/offers?title=Кобзар",
+							"host": [
+								"{{partnerUrl}}"
+							],
+							"path": [
+								"api",
+								"partner",
+								"offers"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "Кобзар"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Processed notifications",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+									"pm.test(\"Notifications are listed\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{notificationUrl}}/api/notifications",
+							"host": [
+								"{{notificationUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "noauth"
+			}
+		},
+		{
+			"name": "Lab 8 - Message broker",
+			"item": [
+				{
+					"name": "Event 1 - create book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 201\", () => pm.response.to.have.status(201));",
+									"pm.collectionVariables.set(\"lab8BookId\", pm.response.json().id);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Message broker demo\",\n  \"isbn\": \"978-966-01-0080-8\",\n  \"publicationYear\": 2026,\n  \"availableCopies\": 1,\n  \"authorId\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Event 2 - delete book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 204\", () => pm.response.to.have.status(204));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books/{{lab8BookId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books",
+								"{{lab8BookId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Consumer result - notifications",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"setTimeout(() => {}, 4000);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+									"const demo = pm.response.json().filter(n => n.subject.includes(\"Message broker demo\"));",
+									"pm.test(\"Book created event was processed\", () => pm.expect(demo.map(n => n.eventType)).to.include(\"BookCreatedEvent\"));",
+									"pm.test(\"Book deleted event was processed\", () => pm.expect(demo.map(n => n.eventType)).to.include(\"BookDeletedEvent\"));",
+									"pm.test(\"Every event processed once\", () => {",
+									"    const ids = pm.response.json().map(n => n.eventId);",
+									"    pm.expect(new Set(ids).size).to.eql(ids.length);",
+									"});",
+									"pm.collectionVariables.set(\"lab8NotificationCount\", pm.response.json().length);"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{notificationUrl}}/api/notifications",
+							"host": [
+								"{{notificationUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications"
+							]
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Failed action - missing author → 404",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status is 404\", () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/books",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"books"
+							]
+						},
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Should not be announced\",\n  \"isbn\": \"978-966-01-0081-5\",\n  \"publicationYear\": 2026,\n  \"availableCopies\": 1,\n  \"authorId\": 999\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Failed action - no new notifications",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"setTimeout(() => {}, 4000);"
+								]
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"No event was published for the failed action\", () => {",
+									"    pm.expect(pm.response.json().length).to.eql(Number(pm.collectionVariables.get(\"lab8NotificationCount\")));",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{notificationUrl}}/api/notifications",
+							"host": [
+								"{{notificationUrl}}"
+							],
+							"path": [
+								"api",
+								"notifications"
+							]
+						},
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{adminToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": ""
+		},
+		{
+			"key": "keycloakUrl",
+			"value": ""
+		},
+		{
+			"key": "adminToken",
+			"value": ""
+		},
+		{
+			"key": "userToken",
+			"value": ""
+		},
+		{
+			"key": "authorId",
+			"value": ""
+		},
+		{
+			"key": "bookId",
+			"value": ""
+		},
+		{
+			"key": "auditBookId",
+			"value": ""
+		},
+		{
+			"key": "selfInvocationBookId",
+			"value": ""
+		},
+		{
+			"key": "auditCountBeforeCopy",
+			"value": ""
+		},
+		{
+			"key": "partnerUrl",
+			"value": ""
+		},
+		{
+			"key": "notificationUrl",
+			"value": ""
+		},
+		{
+			"key": "lab8BookId",
+			"value": ""
+		},
+		{
+			"key": "lab8NotificationCount",
+			"value": ""
+		}
+	]
 }
