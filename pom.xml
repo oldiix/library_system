@@ -4,6 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- ЛР1: проєкт побудований на Spring Boot 3.5.16, версії бібліотек Spring беру з його батьківського POM -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -11,62 +12,90 @@
         <relativePath/>
     </parent>
 
+    <!-- ЛР7: кореневий POM став батьківським для всіх модулів, сам коду не містить (packaging pom) -->
     <groupId>com.example</groupId>
     <artifactId>library-system-parent</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>library-system-parent</name>
-    <description>Батьківський POM: об'єднує сервіси бібліотеки в одну збірку і містить спільне</description>
+    <description>Батьківський POM бібліотеки: збирає всі модулі однією командою і містить спільні налаштування</description>
 
-    <!-- Усі модулі, які збираються разом командою mvn verify з кореня -->
+    <!-- Модулі, які збираються разом командою mvnw verify з кореня -->
     <modules>
-        <module>catalog-service</module>
+        <!-- ЛР7: спільні DTO і три окремі сервіси -->
         <module>common</module>
+        <module>catalog-service</module>
         <module>partner-service</module>
         <module>notification-service</module>
+        <!-- ЛР9: модуль з gRPC-контрактом (.proto), від нього залежать catalog-service і partner-service -->
+        <module>partner-contract</module>
     </modules>
 
     <properties>
+        <!-- ЛР1: версія Java і MapStruct -->
         <java.version>21</java.version>
         <mapstruct.version>1.6.3</mapstruct.version>
+        <!-- ЛР2: JaCoCo для звіту про покриття тестами -->
         <jacoco.version>0.8.13</jacoco.version>
+        <!-- ЛР9: gRPC і узгоджена з ним версія protobuf -->
+        <grpc.version>1.68.1</grpc.version>
+        <protobuf.version>3.25.5</protobuf.version>
     </properties>
 
-    <!-- Лише версії: модуль отримає залежність, тільки якщо сам її оголосить -->
+    <!-- Тут лише версії: модуль отримає залежність, тільки якщо сам її оголосить (без версії) -->
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>com.example</groupId>
-                <artifactId>common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+            <!-- ЛР1: MapStruct для перетворення Entity <-> DTO (потрібен лише catalog-service) -->
             <dependency>
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
                 <version>${mapstruct.version}</version>
             </dependency>
+
+            <!-- ЛР7: модуль зі спільними DTO, його підключають усі сервіси -->
+            <dependency>
+                <groupId>com.example</groupId>
+                <artifactId>common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- ЛР9: модуль з gRPC-контрактом для catalog-service і partner-service -->
+            <dependency>
+                <groupId>com.example</groupId>
+                <artifactId>partner-contract</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- ЛР9: BOM з узгодженими версіями всіх бібліотек gRPC -->
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>${grpc.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
-    <!-- Спільні залежності: їх автоматично отримують УСІ модулі -->
+    <!-- Спільні залежності: їх автоматично отримують усі модулі (ЛР7: перенесено з POM каталогу в корінь) -->
     <dependencies>
-        <!-- Тести: JUnit 5, Mockito, AssertJ, Awaitility, MockMvc -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Lombok: @Slf4j, @RequiredArgsConstructor, @Getter/@Setter -->
+        <!-- ЛР1: Lombok (@Slf4j, @RequiredArgsConstructor, @Getter/@Setter) -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- ЛР2: тести (JUnit 5, Mockito, AssertJ, Awaitility, MockMvc) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
-        <!-- Налаштування плагінів; вмикає плагін сам модуль, якому він потрібен -->
+        <!-- ЛР7: налаштування плагіна Spring Boot тут, а вмикає його кожен сервіс у своєму POM (у common і partner-contract його немає) -->
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -84,9 +113,9 @@
             </plugins>
         </pluginManagement>
 
-        <!-- Плагіни, які діють у ВСІХ модулях -->
+        <!-- Плагіни, які діють у всіх модулях -->
         <plugins>
-            <!-- Компіляція: процесор анотацій Lombok для всіх модулів -->
+            <!-- ЛР1: компіляція з процесором анотацій Lombok -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -101,7 +130,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Покриття тестами: звіт і поріг 60% для кожного модуля -->
+            <!-- ЛР2: звіт про покриття і поріг 60% (ЛР7: діє в кожному модулі окремо) -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
