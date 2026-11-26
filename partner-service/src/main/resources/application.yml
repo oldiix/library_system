@@ -14,3 +14,6 @@ partner:
   bookstore:
     delay: 1s
     available: true
+  grpc:
+    enabled: ${PARTNER_GRPC_ENABLED:false}
+    port: ${PARTNER_GRPC_PORT:9092}
