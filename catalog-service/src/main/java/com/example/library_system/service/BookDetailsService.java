@@ -36,10 +36,10 @@ public class BookDetailsService {
 
         // Обидва виклики запускаються одразу, жоден не чекає на інший
         CompletableFuture<BookRating> rating = withTimeoutAndFallback(
-                externalCatalogClient.fetchRating(book.getTitle()),
+                externalCatalogClient.fetchRating(book.getIsbn()),
                 BookRating.unavailable(), "Сервіс відгуків");
         CompletableFuture<StoreOffer> offer = withTimeoutAndFallback(
-                externalCatalogClient.fetchOffer(book.getTitle()),
+                externalCatalogClient.fetchOffer(book.getIsbn()),
                 StoreOffer.unavailable(), "Книгарня-партнер");
 
         return rating
