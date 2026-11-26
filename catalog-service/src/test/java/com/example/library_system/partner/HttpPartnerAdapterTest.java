@@ -3,8 +3,10 @@ package com.example.library_system.partner;
 import com.example.common.dto.BookDiscount;
 import com.example.common.dto.BookRating;
 import com.example.common.dto.StoreOffer;
+import com.example.library_system.config.HttpClientsConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -12,9 +14,14 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import java.net.ConnectException;
+import java.net.ServerSocket;
+import java.net.SocketTimeoutException;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -31,13 +38,16 @@ class HttpPartnerAdapterTest {
     void setUp() {
         RestClient.Builder builder = RestClient.builder().baseUrl("http://partner.test");
         partner = MockRestServiceServer.bindTo(builder).build();
-        adapter = new HttpPartnerAdapter(builder.build());
+        adapter = new HttpPartnerAdapter(HttpClientsConfig.createPartnerApi(builder.build()));
     }
 
     @Test
-    void partnerResponds_allThreePortsReturnData() {
-        partner.expect(requestTo(BASE + "/rating")).andRespond(withSuccess(
-                "{\"average\":4.8,\"reviewsCount\":312,\"available\":true}", MediaType.APPLICATION_JSON));
+    void declarativeClient_sendsGetToPartnerPaths() {
+        partner.expect(requestTo(BASE + "/rating"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(header("Accept", MediaType.APPLICATION_JSON_VALUE))
+                .andRespond(withSuccess("{\"average\":4.8,\"reviewsCount\":312,\"available\":true}",
+                        MediaType.APPLICATION_JSON));
         partner.expect(requestTo(BASE + "/offer")).andRespond(withSuccess(
                 "{\"priceUah\":420.00,\"inStock\":true,\"available\":true}", MediaType.APPLICATION_JSON));
         partner.expect(requestTo(BASE + "/discount")).andRespond(withSuccess(
@@ -88,5 +98,24 @@ class HttpPartnerAdapterTest {
 
         assertThat(exception).isNotInstanceOf(RestClientException.class);
         assertThat(exception.getCause()).isInstanceOf(RestClientException.class);
+    }
+
+    @Test
+    void silentPartner_readTimeoutStopsWaitingAndBecomesUnavailable() throws Exception {
+        try (ServerSocket silentPartner = new ServerSocket(0)) {
+            RestClient restClient = RestClient.builder()
+                    .baseUrl("http://localhost:" + silentPartner.getLocalPort())
+                    .requestFactory(HttpClientsConfig.requestFactory(Duration.ofSeconds(1), Duration.ofMillis(300)))
+                    .build();
+            HttpPartnerAdapter timedAdapter = new HttpPartnerAdapter(HttpClientsConfig.createPartnerApi(restClient));
+
+            long started = System.nanoTime();
+            PartnerUnavailableException exception = assertThrows(PartnerUnavailableException.class,
+                    () -> timedAdapter.findRating(KOBZAR));
+            Duration waited = Duration.ofNanos(System.nanoTime() - started);
+
+            assertThat(waited).isLessThan(Duration.ofSeconds(2));
+            assertThat(exception).hasRootCauseInstanceOf(SocketTimeoutException.class);
+        }
     }
 }
