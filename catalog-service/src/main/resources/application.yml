@@ -85,11 +85,16 @@ library:
     queue-capacity: 10
     thread-name-prefix: library-async-
 
+  # ===== ЛР5: скільки деталі книги чекають на паралельні виклики партнера =====
   external:
-    partner-url: http://localhost:8082
-    connect-timeout: 1s
-    read-timeout: 3s
     timeout: 2s
+
+  # ===== ЛР9: HTTP-клієнт partner-service з явними тайм-аутами =====
+  partner:
+    http:
+      base-url: ${PARTNER_HTTP_URL:http://localhost:8082}
+      connect-timeout: ${PARTNER_HTTP_CONNECT_TIMEOUT:1s}
+      read-timeout: ${PARTNER_HTTP_READ_TIMEOUT:2s}
 
   # ===== ЛР6: розклади задач Quartz і часовий пояс =====
   scheduling:
