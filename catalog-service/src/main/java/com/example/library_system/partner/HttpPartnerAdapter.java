@@ -3,45 +3,39 @@ package com.example.library_system.partner;
 import com.example.common.dto.BookDiscount;
 import com.example.common.dto.BookRating;
 import com.example.common.dto.StoreOffer;
-import com.example.library_system.config.HttpClientsConfig;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+
+import java.util.function.Supplier;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class HttpPartnerAdapter implements RatingLookup, OfferLookup, DiscountLookup {
 
-    private final RestClient restClient;
-
-    public HttpPartnerAdapter(@Qualifier(HttpClientsConfig.PARTNER_REST_CLIENT) RestClient restClient) {
-        this.restClient = restClient;
-    }
+    private final PartnerHttpApi partnerHttpApi;
 
     @Override
     public BookRating findRating(String isbn) {
-        return call(isbn, "rating", BookRating.class);
+        return call(isbn, "rating", () -> partnerHttpApi.rating(isbn));
     }
 
     @Override
     public StoreOffer findOffer(String isbn) {
-        return call(isbn, "offer", StoreOffer.class);
+        return call(isbn, "offer", () -> partnerHttpApi.offer(isbn));
     }
 
     @Override
     public BookDiscount findDiscount(String isbn) {
-        return call(isbn, "discount", BookDiscount.class);
+        return call(isbn, "discount", () -> partnerHttpApi.discount(isbn));
     }
 
-    private <T> T call(String isbn, String resource, Class<T> type) {
+    private <T> T call(String isbn, String resource, Supplier<T> request) {
         try {
-            return restClient.get()
-                    .uri("/api/partner/books/{isbn}/{resource}", isbn, resource)
-                    .retrieve()
-                    .body(type);
+            return request.get();
         } catch (HttpClientErrorException.NotFound exception) {
             throw new PartnerDataNotFoundException("Партнер не знає книги з ISBN " + isbn, exception);
         } catch (RestClientException exception) {
