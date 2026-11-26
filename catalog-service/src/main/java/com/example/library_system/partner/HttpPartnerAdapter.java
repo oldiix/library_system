@@ -5,14 +5,12 @@ import com.example.common.dto.BookRating;
 import com.example.common.dto.StoreOffer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 
 import java.util.function.Supplier;
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class HttpPartnerAdapter implements RatingLookup, OfferLookup, DiscountLookup {
 
