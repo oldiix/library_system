@@ -92,6 +92,25 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
+
+        <!-- ЛР9: контракт partner-service (.proto і згенерований gRPC-стаб) -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>partner-contract</artifactId>
+        </dependency>
+
+        <!-- ЛР9: мережевий транспорт gRPC-клієнта (Netty) -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty-shaded</artifactId>
+        </dependency>
+
+        <!-- ЛР9: сервер і канал у пам'яті для тестів gRPC-адаптера -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-inprocess</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
