@@ -2,8 +2,6 @@ package com.example.partner;
 
 import com.example.common.dto.BookRating;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 
@@ -12,28 +10,28 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ReviewsServiceTest {
 
+    private final PartnerCatalog catalog = new PartnerCatalog();
+
     @Test
-    void ratingFor_serviceAvailable_returnsStableRatingInExpectedRange() {
+    void ratingFor_knownIsbn_returnsRatingFromCatalog() {
+        ReviewsService service = new ReviewsService(catalog, Duration.ZERO, true);
 
-        ReviewsService service = new ReviewsService(Duration.ZERO, true);
+        BookRating rating = service.ratingFor("978-966-01-0001-1");
 
-        BookRating first = service.ratingFor("Кобзар");
-        BookRating second = service.ratingFor("Кобзар");
-
-        assertThat(first).isEqualTo(second);
-        assertThat(first.available()).isTrue();
-        assertThat(first.average()).isBetween(3.5, 4.9);
-        assertThat(first.reviewsCount()).isBetween(10, 499);
+        assertThat(rating).isEqualTo(new BookRating(4.8, 312, true));
     }
 
     @Test
-    void ratingFor_serviceUnavailable_throwsServiceUnavailable() {
+    void ratingFor_unknownIsbn_throwsNotInCatalog() {
+        ReviewsService service = new ReviewsService(catalog, Duration.ZERO, true);
 
-        ReviewsService service = new ReviewsService(Duration.ZERO, false);
+        assertThrows(BookNotInCatalogException.class, () -> service.ratingFor("978-0-00-000000-0"));
+    }
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> service.ratingFor("Кобзар"));
+    @Test
+    void ratingFor_serviceUnavailable_throwsUnavailableEvenForKnownIsbn() {
+        ReviewsService service = new ReviewsService(catalog, Duration.ZERO, false);
 
-        assertThat(exception.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThrows(PartnerTemporarilyUnavailableException.class, () -> service.ratingFor("978-966-01-0001-1"));
     }
 }

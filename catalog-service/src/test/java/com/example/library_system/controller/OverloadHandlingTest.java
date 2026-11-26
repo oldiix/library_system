@@ -5,10 +5,10 @@ import com.example.library_system.config.AsyncProperties;
 import com.example.library_system.config.LoggingAsyncExceptionHandler;
 import com.example.library_system.dto.BookDto;
 import com.example.common.dto.BookRating;
-import com.example.library_system.external.BookstoreGateway;
 import com.example.library_system.external.ExternalCatalogClient;
-import com.example.library_system.external.ReviewsGateway;
 import com.example.common.dto.StoreOffer;
+import com.example.library_system.partner.OfferLookup;
+import com.example.library_system.partner.RatingLookup;
 import com.example.library_system.service.BookDetailsService;
 import com.example.library_system.service.BookService;
 import org.junit.jupiter.api.Test;
@@ -109,15 +109,15 @@ class OverloadHandlingTest {
         }
     }
 
-    static class StubGateways implements ReviewsGateway, BookstoreGateway {
+    static class StubGateways implements RatingLookup, OfferLookup {
 
         @Override
-        public BookRating fetchRating(String title) {
+        public BookRating findRating(String isbn) {
             return new BookRating(4.8, 120, true);
         }
 
         @Override
-        public StoreOffer fetchOffer(String title) {
+        public StoreOffer findOffer(String isbn) {
             return new StoreOffer(new BigDecimal("250"), true, true);
         }
     }

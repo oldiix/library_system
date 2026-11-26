@@ -41,15 +41,16 @@ class BookDetailsServiceTest {
         kobzar = new BookDto();
         kobzar.setId(1L);
         kobzar.setTitle("Кобзар");
+        kobzar.setIsbn("978-966-01-0001-1");
     }
 
     @Test
     void getDetails_bothServicesRespond_combinesBookRatingAndOffer() {
 
         when(bookService.findById(1L)).thenReturn(kobzar);
-        when(externalCatalogClient.fetchRating("Кобзар"))
+        when(externalCatalogClient.fetchRating("978-966-01-0001-1"))
                 .thenReturn(CompletableFuture.completedFuture(new BookRating(4.8, 120, true)));
-        when(externalCatalogClient.fetchOffer("Кобзар"))
+        when(externalCatalogClient.fetchOffer("978-966-01-0001-1"))
                 .thenReturn(CompletableFuture.completedFuture(new StoreOffer(new BigDecimal("250"), true, true)));
 
         BookDetailsResponse details = bookDetailsService.getDetails(1L);
@@ -66,9 +67,9 @@ class BookDetailsServiceTest {
     void getDetails_ratingServiceFails_returnsFallbackRatingInsteadOfError() {
 
         when(bookService.findById(1L)).thenReturn(kobzar);
-        when(externalCatalogClient.fetchRating("Кобзар"))
+        when(externalCatalogClient.fetchRating("978-966-01-0001-1"))
                 .thenReturn(CompletableFuture.failedFuture(new IllegalStateException("Сервіс відгуків недоступний")));
-        when(externalCatalogClient.fetchOffer("Кобзар"))
+        when(externalCatalogClient.fetchOffer("978-966-01-0001-1"))
                 .thenReturn(CompletableFuture.completedFuture(new StoreOffer(new BigDecimal("250"), true, true)));
 
         BookDetailsResponse details = bookDetailsService.getDetails(1L);
@@ -82,9 +83,9 @@ class BookDetailsServiceTest {
     void getDetails_bookstoreNeverResponds_stopsWaitingAfterTimeoutAndUsesFallback() {
 
         when(bookService.findById(1L)).thenReturn(kobzar);
-        when(externalCatalogClient.fetchRating("Кобзар"))
+        when(externalCatalogClient.fetchRating("978-966-01-0001-1"))
                 .thenReturn(CompletableFuture.completedFuture(new BookRating(4.8, 120, true)));
-        when(externalCatalogClient.fetchOffer("Кобзар"))
+        when(externalCatalogClient.fetchOffer("978-966-01-0001-1"))
                 .thenReturn(new CompletableFuture<>());   // «завислий» сервіс: ніколи не завершиться
 
         BookDetailsResponse details = assertTimeout(Duration.ofSeconds(2),

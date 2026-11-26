@@ -32,6 +32,10 @@ services:
       - services
     ports:
       - "8082:8082"
+      - "9092:9092"
+    environment:
+      PARTNER_GRPC_ENABLED: "true"
+      PARTNER_GRPC_PORT: 9092
 
   notification-service:
     build: ./notification-service

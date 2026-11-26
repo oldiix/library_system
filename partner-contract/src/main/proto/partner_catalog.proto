@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package library.partner.v1;
+
+option java_multiple_files = true;
+option java_package = "com.example.contract.partner";
+option java_outer_classname = "PartnerCatalogProto";
+
+service PartnerCatalog {
+  rpc GetRating (BookRequest) returns (RatingReply);
+  rpc GetOffer (BookRequest) returns (OfferReply);
+  rpc GetDiscount (BookRequest) returns (DiscountReply);
+}
+
+message BookRequest {
+  string isbn = 1;
+}
+
+message RatingReply {
+  double average = 1;
+  int32 reviews_count = 2;
+}
+
+message OfferReply {
+  string price_uah = 1;
+  bool in_stock = 2;
+}
+
+message DiscountReply {
+  string isbn = 1;
+  int32 percent = 2;
+}

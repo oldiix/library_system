@@ -7,6 +7,8 @@ import com.example.library_system.config.AsyncProperties;
 import com.example.library_system.config.LoggingAsyncExceptionHandler;
 import com.example.library_system.dto.BookDetailsResponse;
 import com.example.library_system.dto.BookDto;
+import com.example.library_system.partner.OfferLookup;
+import com.example.library_system.partner.RatingLookup;
 import com.example.library_system.service.BookDetailsService;
 import com.example.library_system.service.BookService;
 import org.junit.jupiter.api.Test;
@@ -86,19 +88,18 @@ class ParallelCallsTest {
         }
     }
 
-    static class RendezvousGateways implements ReviewsGateway, BookstoreGateway {
-
+    static class RendezvousGateways implements RatingLookup, OfferLookup {
         private final CountDownLatch bothStarted = new CountDownLatch(2);
         final Set<String> threadNames = ConcurrentHashMap.newKeySet();
 
         @Override
-        public BookRating fetchRating(String title) {
+        public BookRating findRating(String isbn) {
             meetTheOtherCall();
             return new BookRating(4.8, 120, true);
         }
 
         @Override
-        public StoreOffer fetchOffer(String title) {
+        public StoreOffer findOffer(String isbn) {
             meetTheOtherCall();
             return new StoreOffer(new BigDecimal("250"), true, true);
         }

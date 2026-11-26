@@ -39,4 +39,12 @@ class CommonDtoTest {
         assertThat(new StoreOffer(new BigDecimal("250"), true, true).priceUah()).isEqualByComparingTo("250");
         assertThat(letter.recipient()).isEqualTo("readers@library.example");
     }
+
+    @Test
+    void bookDiscount_keepsIsbnAndPercent() {
+        BookDiscount discount = new BookDiscount("978-966-01-0001-1", 10);
+
+        assertThat(discount.isbn()).isEqualTo("978-966-01-0001-1");
+        assertThat(discount.percent()).isEqualTo(10);
+    }
 }
