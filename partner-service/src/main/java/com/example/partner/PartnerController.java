@@ -1,28 +1,34 @@
 package com.example.partner;
 
+import com.example.common.dto.BookDiscount;
 import com.example.common.dto.BookRating;
 import com.example.common.dto.StoreOffer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/partner")
+@RequestMapping("/api/partner/books/{isbn}")
 @RequiredArgsConstructor
 public class PartnerController {
 
     private final ReviewsService reviewsService;
     private final BookstoreService bookstoreService;
 
-    @GetMapping("/ratings")
-    public BookRating rating(@RequestParam String title) {
-        return reviewsService.ratingFor(title);
+    @GetMapping("/rating")
+    public BookRating rating(@PathVariable String isbn) {
+        return reviewsService.ratingFor(isbn);
     }
 
-    @GetMapping("/offers")
-    public StoreOffer offer(@RequestParam String title) {
-        return bookstoreService.offerFor(title);
+    @GetMapping("/offer")
+    public StoreOffer offer(@PathVariable String isbn) {
+        return bookstoreService.offerFor(isbn);
+    }
+
+    @GetMapping("/discount")
+    public BookDiscount discount(@PathVariable String isbn) {
+        return bookstoreService.discountFor(isbn);
     }
 }
