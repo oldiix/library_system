@@ -7,6 +7,7 @@
 ![Quartz](https://img.shields.io/badge/Quartz-2.5-blue)
 ![Maven](https://img.shields.io/badge/Maven-multi--module-C71A36?logo=apachemaven)
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-4-FF6600?logo=rabbitmq&logoColor=white)
+![gRPC](https://img.shields.io/badge/gRPC-1.68-244C5A)
 ![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
 ![Coverage](https://img.shields.io/badge/coverage-%E2%89%A560%25-brightgreen)
 
@@ -28,7 +29,8 @@ simple web UI for managing authors and books, secured with Keycloak.
 - Unit and integration tests with a JaCoCo coverage gate (min. 60%)
 - MySQL and Keycloak start automatically with Docker Compose
 - **Multi-module Maven** build: three independent services and a shared `common` module
-- The catalog calls `partner-service` over **HTTP** (`RestClient`); each service has its own `Dockerfile`
+- The catalog talks to `partner-service` through **ports and adapters**: a declarative HTTP client (`@HttpExchange`) or **gRPC**, selected by configuration; each service has its own `Dockerfile`
+- Explicit HTTP timeouts and per-call gRPC deadlines; partner errors are translated into `404` / `503`
 - Domain events go through **RabbitMQ**: published after commit, consumed idempotently, nothing lost while the consumer is down
 
 ## Services
@@ -39,15 +41,16 @@ class, `application.yml`, port, tests and `Dockerfile`.
 
 | Module | Port | Responsibility | Depends on |
 |---|---|---|---|
-| `catalog-service` | 8081 | Books, authors, security, UI, aspects, async, Quartz | `common` |
-| `partner-service` | 8082 | Book ratings (reviews service) and bookstore offers | `common` |
+| `catalog-service` | 8081 | Books, authors, security, UI, aspects, async, Quartz, partner adapters | `common`, `partner-contract` |
+| `partner-service` | 8082 (REST), 9092 (gRPC) | Partner catalog by ISBN: ratings, offers and discounts | `common`, `partner-contract` |
 | `notification-service` | 8083 | Consumes library events from RabbitMQ and sends email notifications | `common` |
-| `common` | — | Shared DTOs and events only: `BookRating`, `StoreOffer`, `NotificationRequest`, `BookCreatedEvent`, `BookDeletedEvent`, `StockReportGeneratedEvent` | — |
+| `common` | — | Shared DTOs and events only: `BookRating`, `StoreOffer`, `BookDiscount`, `NotificationRequest`, `BookCreatedEvent`, `BookDeletedEvent`, `StockReportGeneratedEvent` | — |
+| `partner-contract` | — | `partner_catalog.proto` and the gRPC classes generated from it during the build | — |
 
 ```mermaid
 flowchart LR
     Client["Postman / Browser"] --> CAT["catalog-service :8081"]
-    CAT -->|"GET /api/partner/ratings, /offers"| PAR["partner-service :8082"]
+    CAT -->|"REST /api/partner/books/{isbn}/... or gRPC PartnerCatalog"| PAR["partner-service :8082 / :9092"]
     CAT -->|"events after commit"| MQ[["RabbitMQ :5672"]]
     MQ -->|"notification.library-events"| NOT["notification-service :8083"]
     CAT --> DB[("MySQL")]
@@ -55,35 +58,40 @@ flowchart LR
     CAT -. uses .-> COM["common (DTOs)"]
     PAR -. uses .-> COM
     NOT -. uses .-> COM
+    CAT -. uses .-> CON["partner-contract (.proto)"]
+    PAR -. uses .-> CON
 ```
 
 **Root POM** (`library-system-parent`, `packaging pom`):
 
 | Section | Contents | Effect |
 |---|---|---|
-| `<modules>` | `common`, `catalog-service`, `partner-service`, `notification-service` | One build for the whole repository |
+| `<modules>` | `common`, `catalog-service`, `partner-service`, `notification-service`, `partner-contract` | One build for the whole repository |
 | `<dependencies>` | `spring-boot-starter-test`, Lombok | Inherited by every module, not declared in modules |
-| `<dependencyManagement>` | versions of `common` and MapStruct | Modules declare these dependencies without versions |
+| `<dependencyManagement>` | versions of `common`, `partner-contract`, MapStruct and the gRPC BOM | Modules declare these dependencies without versions |
 | `<pluginManagement>` | `spring-boot-maven-plugin` configuration | Enabled only in the POM of each service, not in `common` |
 | `<build><plugins>` | compiler (Lombok processor), JaCoCo with a 60% gate | Applied to every module |
 
-**Service independence.** No service depends on another service in Maven; they only share
-`common`. `./mvnw dependency:tree` confirms this (see `docs/lab7/dependency-tree.txt`):
+**Service independence.** No service depends on another service in Maven; they share only
+`common` and the API module `partner-contract`. `./mvnw dependency:tree` confirms this:
 
 ```
 com.example:catalog-service:jar:0.0.1-SNAPSHOT
 +- com.example:common:jar:0.0.1-SNAPSHOT:compile
++- com.example:partner-contract:jar:0.0.1-SNAPSHOT:compile
 com.example:partner-service:jar:0.0.1-SNAPSHOT
 +- com.example:common:jar:0.0.1-SNAPSHOT:compile
++- com.example:partner-contract:jar:0.0.1-SNAPSHOT:compile
 com.example:notification-service:jar:0.0.1-SNAPSHOT
 +- com.example:common:jar:0.0.1-SNAPSHOT:compile
 ```
 
-The catalog only knows the partner service URL (`library.external.partner-url`) and the broker
-address. The async timeouts and fallbacks protect it from real network failures: if
-`partner-service` is down, book details still return `200` with `available: false`. The catalog
-does not call `notification-service` at all: it publishes events to RabbitMQ, so the consumer
-can be stopped without losing anything.
+The catalog only knows the partner addresses (`library.partner.http.base-url`,
+`library.partner.grpc.target`) and the broker address. Timeouts, deadlines and fallbacks protect it
+from network failures: if `partner-service` is down, book details still return `200` with
+`available: false`, and partner-only actions return `503`. The catalog does not call
+`notification-service` at all: it publishes events to RabbitMQ, so the consumer can be stopped
+without losing anything.
 
 ## Catalog Architecture
 
@@ -95,7 +103,7 @@ flowchart LR
     API -.-> KC
     API --> C["Controllers"] --> P["Proxy + aspects"] --> S["Services"] --> R["Repositories"] --> DB[("MySQL")]
     S -.->|"@Async"| POOL["library-async-* pool"]
-    POOL -.-> EXT["External services"]
+    POOL -.-> PORTS["Partner ports<br/>HTTP or gRPC adapter"]
     Q["Quartz scheduler"] -->|"jobs"| S
     Q <-->|"QRTZ_* tables"| DB
 ```
@@ -211,6 +219,57 @@ flowchart LR
 
 RabbitMQ management UI: http://localhost:15672 (`library` / `library_pass`).
 
+## Interservice Communication (HTTP and gRPC)
+
+The catalog asks `partner-service` about books by **ISBN** through three small ports. Services and
+controllers depend only on the ports; the transport lives in adapters and is chosen by configuration.
+
+| Port | Question | Used by |
+|---|---|---|
+| `RatingLookup` | What is the partner rating of this book? | Book details, partner rating |
+| `OfferLookup` | What is the partner price and stock? | Book details, purchase quote |
+| `DiscountLookup` | What discount does the partner give? | Purchase quote |
+
+```mermaid
+flowchart LR
+    C["PartnerInfoController<br/>BookDetailsController"] --> S["PartnerInfoService<br/>BookDetailsService"]
+    S --> P["RatingLookup / OfferLookup / DiscountLookup"]
+    P -.->|"transport=http"| H["HttpPartnerAdapter<br/>PartnerHttpApi (@HttpExchange)"]
+    P -.->|"transport=grpc"| G["GrpcPartnerAdapter<br/>PartnerCatalogBlockingStub"]
+    H -->|"REST :8082"| PAR["partner-service"]
+    G -->|"gRPC :9092"| PAR
+```
+
+| Business action | Catalog endpoint | When the partner fails |
+|---|---|---|
+| Book details | `GET /api/books/{id}/details` | `200` with `available: false` |
+| Purchase quote (price after partner discount) | `GET /api/books/{id}/purchase-quote` | `404` / `503` |
+| Partner rating | `GET /api/books/{id}/partner-rating` | `404` / `503` |
+
+| Setting | Environment variable | Default |
+|---|---|---|
+| `library.partner.transport` (`http` or `grpc`) | `PARTNER_TRANSPORT` | `http` |
+| `library.partner.http.base-url` | `PARTNER_HTTP_URL` | `http://localhost:8082` |
+| `library.partner.http.connect-timeout` / `read-timeout` | `PARTNER_HTTP_CONNECT_TIMEOUT` / `PARTNER_HTTP_READ_TIMEOUT` | `1s` / `2s` |
+| `library.partner.grpc.target` | `PARTNER_GRPC_TARGET` | `localhost:9092` |
+| `library.partner.grpc.deadline` (set on every call) | `PARTNER_GRPC_DEADLINE` | `2s` |
+| `partner.grpc.enabled` in `partner-service` | `PARTNER_GRPC_ENABLED` | `false` (`true` in Docker Compose) |
+
+An unknown transport, a missing address or a zero timeout stops the catalog at startup.
+Exactly one adapter bean is created.
+
+| What happened | REST adapter sees | gRPC adapter sees | Catalog returns |
+|---|---|---|---|
+| The partner does not know the ISBN | `404` | `NOT_FOUND` | `404` (`PartnerDataNotFoundException`) |
+| The partner is down | connection refused | `UNAVAILABLE` | `503` (`PartnerUnavailableException`) |
+| The partner is too slow | read timeout (2 s) | `DEADLINE_EXCEEDED` (2 s) | `503` |
+| Any other error | any other status | any other status | `503` |
+
+`RestClientException` and `StatusRuntimeException` never leave the adapters.
+
+The gRPC contract is `partner-contract/src/main/proto/partner_catalog.proto`
+(service `library.partner.v1.PartnerCatalog`: `GetRating`, `GetOffer`, `GetDiscount`).
+
 ## Getting Started
 
 **Requirements:** JDK 21, Docker Desktop.
@@ -219,6 +278,10 @@ RabbitMQ management UI: http://localhost:15672 (`library` / `library_pass`).
 `NotificationServiceApplication` and `LibrarySystemApplication` (working directory
 `$MODULE_WORKING_DIR$`). MySQL, Keycloak and RabbitMQ start automatically with the catalog; the Keycloak
 realm is imported from `keycloak/course-realm.json`.
+
+To start the partner gRPC server from the IDE, set `PARTNER_GRPC_ENABLED=true` for
+`PartnerServiceApplication`. To switch the catalog to gRPC, set `PARTNER_TRANSPORT=grpc` for
+`LibrarySystemApplication`.
 
 **Option 2: partner and notification services in Docker.**
 
@@ -236,6 +299,7 @@ Then run only `LibrarySystemApplication` from IntelliJ IDEA. Stop the containers
 | Web UI | http://localhost:8081 |
 | REST API | http://localhost:8081/api |
 | Partner service | http://localhost:8082/api/partner |
+| Partner gRPC | `localhost:9092` (`library.partner.v1.PartnerCatalog`) |
 | Notification service | http://localhost:8083/api/notifications |
 | Keycloak admin | http://localhost:8080 (`admin` / `admin`) |
 | RabbitMQ UI | http://localhost:15672 (`library` / `library_pass`) |
@@ -252,6 +316,7 @@ Then run only `LibrarySystemApplication` from IntelliJ IDEA. Stop the containers
 | Authors | `GET` `POST` `/api/authors`, `GET` `PUT` `DELETE` `/api/authors/{id}` |
 | Books | `GET` `POST` `/api/books`, `GET` `PUT` `DELETE` `/api/books/{id}`, `POST` `/api/books/{id}/copy` |
 | Book details | `GET` `/api/books/{id}/details` — book + external rating + bookstore offer |
+| Partner data | `GET` `/api/books/{id}/partner-rating`, `GET` `/api/books/{id}/purchase-quote` — `404` if the partner does not know the ISBN, `503` if it is unavailable |
 | Current user | `GET` `/api/me` |
 | Audit log | `GET` `/api/audit` (ADMIN only) |
 | Stock reports | `GET` `/api/reports/stock` (ADMIN only) |
@@ -262,7 +327,7 @@ Internal service APIs (no authentication, called by the catalog):
 
 | Service | Endpoints |
 |---|---|
-| `partner-service` | `GET` `/api/partner/ratings?title=`, `GET` `/api/partner/offers?title=` (`503` when a partner is unavailable) |
+| `partner-service` | REST `GET` `/api/partner/books/{isbn}/rating`, `/offer`, `/discount` (`404` unknown ISBN, `503` unavailable); gRPC `GetRating`, `GetOffer`, `GetDiscount` on port 9092 (`NOT_FOUND`, `UNAVAILABLE`) |
 | `notification-service` | `GET` `/api/notifications` (events processed from the broker) |
 
 ## Testing
@@ -286,10 +351,11 @@ The build fails if line or instruction coverage of any module drops below **60%*
 | Custom annotations | `ValidBookCopiesTest`, `PostCreatedTest`, `CreateEndpointsTest`, `CurrentUserArgumentResolverTest`, `CurrentUserControllerTest`, `WebConfigTest` |
 | Aspects | `FeatureToggleAspectTest`, `FeaturePropertiesTest`, `FeatureToggleProxyTest`, `AuditAspectTest`, `AuditTrailTest`, `AuditProxyTest`, `AuditControllerTest`, `NormalizeInputAspectTest`, `DtoNormalizationTest`, `NormalizeInputProxyTest`, `SelfInvocationTest` |
 | Async | `AsyncConfigTest`, `AsyncExecutorThreadTest`, `LoggingAsyncExceptionHandlerTest`, `ParallelCallsTest`, `BookDetailsControllerTest`, `ExecutorRejectionTest`, `OverloadHandlingTest` |
-| HTTP clients | `PartnerServiceGatewayTest` |
+| Partner ports and adapters | `HttpPartnerAdapterTest`, `GrpcPartnerAdapterTest`, `HttpClientsConfigTest`, `PartnerTransportConfigTest`, `PartnerInfoServiceTest`, `PartnerInfoControllerTest` |
 | Messaging (catalog) | `MessagingConfigTest`, `LibraryEventPublisherTest`, `BrokerEventRelayTest`, `AfterCommitPublicationTest`, `BrokerAddressTest` |
 | Messaging (consumer) | `MessagingConfigTest`, `LibraryEventHandlerTest`, `LibraryEventListenerTest`, `BrokerSettingsTest` |
-| Partner service | `ReviewsServiceTest`, `BookstoreServiceTest`, `PartnerControllerTest` |
+| Partner service | `PartnerCatalogTest`, `ReviewsServiceTest`, `BookstoreServiceTest`, `PartnerControllerTest`, `PartnerGrpcServiceTest`, `GrpcServerLifecycleTest`, `GrpcServerConfigTest` |
+| Partner contract | `PartnerContractTest` |
 | Notification service | `EmailServiceTest`, `NotificationControllerTest` |
 | Common | `CommonDtoTest`, `LibraryEventsTest` |
 | Scheduling | `QuartzSchemaConfigurationTest`, `QuartzJobsConfigTest`, `QuartzScheduleSynchronizerTest`, `QuartzExecutionBehaviourTest`, `JobParametersTest`, `CatalogNormalizationJobTest`, `StockReportJobTest`, `CatalogNormalizationServiceTest`, `CatalogNormalizationServiceIntegrationTest`, `StockReportServiceTest`, `StockReportServiceIntegrationTest`, `StockReportControllerTest` |
@@ -300,33 +366,42 @@ Import `postman/Library API.postman_collection.json`, run the **Auth** folder to
 tokens, then run any request or the whole collection via **Run collection**.
 The **Lab 7 - Services** folder calls `partner-service` directly; **Lab 8 - Message broker**
 creates and deletes a book and checks that `notification-service` processed both events, and that
-a failed action publishes nothing.
+a failed action publishes nothing. **Lab 9 - Interservice** checks the purchase quote, the partner
+rating, book details and `404` for an unknown ISBN; it passes unchanged with `PARTNER_TRANSPORT=http`
+and `PARTNER_TRANSPORT=grpc`. Its last four requests are manual: they need the partner stopped or
+started with `PARTNER_BOOKSTORE_DELAY=3s` and expect `503`.
+
+gRPC calls are kept in a separate Postman collection **Library gRPC** (server `localhost:9092`
+without TLS, service definition imported from `partner_catalog.proto`), because Postman does not
+export gRPC requests to JSON.
 
 ## Project Structure
 
 ```
 library-repo/
 ├── pom.xml                 # root POM: modules, shared dependencies and plugins
-├── compose.yaml            # MySQL, Keycloak, RabbitMQ, partner and notification services
+├── compose.yaml            # MySQL, Keycloak, RabbitMQ, partner (REST + gRPC) and notification services
 ├── common/                 # shared DTOs (records only, no Spring)
 ├── catalog-service/        # main application, port 8081
 │   ├── Dockerfile
 │   └── src/main/java/com/example/library_system/
 │       ├── aop/            # aspects and their annotations
 │       ├── audit/          # audit log storage
-│       ├── config/         # security, web, async, clock and HTTP clients
+│       ├── config/         # security, web, async, clock, partner HTTP client and transport selection
 │       ├── controller/     # REST controllers and overload handler
 │       ├── dto/            # request/response objects
 │       ├── entity/         # JPA entities
-│       ├── external/       # async client and HTTP gateway to partner-service
+│       ├── external/       # async client for book details
 │       ├── mapper/         # MapStruct mappers
 │       ├── messaging/      # domain events published to RabbitMQ after commit
+│       ├── partner/        # ports, HTTP and gRPC adapters, partner exceptions
 │       ├── repository/     # Spring Data JPA repositories
 │       ├── scheduling/     # Quartz jobs, triggers and schedule synchronization
 │       ├── service/        # business logic
 │       ├── validation/     # custom Bean Validation constraint
 │       └── web/            # composed annotation and argument resolver
-├── partner-service/        # ratings and bookstore offers, port 8082
+├── partner-contract/       # partner_catalog.proto; gRPC classes are generated during the build
+├── partner-service/        # partner catalog by ISBN over REST (8082) and gRPC (9092)
 │   └── Dockerfile
 └── notification-service/   # consumes events from RabbitMQ, port 8083
     └── Dockerfile
@@ -342,6 +417,7 @@ library-repo/
 - [x] Scheduled jobs with Quartz: persistent schedule, idempotent jobs, misfire handling
 - [x] Multi-module Maven structure: separate services, shared `common`, Dockerfiles
 - [x] Message broker: domain events through RabbitMQ, idempotent consumer, dead-letter queue
+- [x] Interservice communication: ports and adapters, declarative HTTP client, gRPC with deadlines, transport selection
 - [ ] Book loans and return reminders
 
 ## 👤 Author
